@@ -14,7 +14,6 @@ function createHDCanvas(canvas: HTMLCanvasElement, w: number, h: number) {
 const PixiCanvas: React.FC = () => {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const appRef = useRef<PIXI.Application | null>(null);
-    const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const ratio = window.devicePixelRatio || 1;
 
     // **存储窗口尺寸**
@@ -40,16 +39,12 @@ const PixiCanvas: React.FC = () => {
                     view: canvas,
                     width: canvasSize.width,
                     height: canvasSize.height,
-                    backgroundColor: 0x000000,
+                    backgroundColor: 0x1a1a1a,
                     resolution: ratio,
                     autoDensity: true,
                 });
 
                 console.log("✅ Pixi App Initialized");
-
-                if (!app.canvas) {
-                    throw new Error("Pixi.js canvas 仍然未初始化");
-                }
 
                 if (containerRef.current && containerRef.current.childNodes.length === 0) {
                     containerRef.current.appendChild(app.canvas);
@@ -57,8 +52,8 @@ const PixiCanvas: React.FC = () => {
 
                 appRef.current = app;
 
-                // **初始化粒子爆炸**
-                startParticleExplosions(app);
+                // **初始化可拖動視窗**
+                createFloatingWindow(app);
 
             } catch (error) {
                 console.error("Pixi.js Initialization Error:", error);
@@ -72,10 +67,6 @@ const PixiCanvas: React.FC = () => {
                 console.log("🧹 销毁 Pixi 应用");
                 appRef.current.destroy(true);
                 appRef.current = null;
-            }
-
-            if (intervalRef.current) {
-                clearTimeout(intervalRef.current);
             }
         };
     }, [canvasSize]);
@@ -98,94 +89,98 @@ const PixiCanvas: React.FC = () => {
     return <div ref={containerRef} style={{ width: "100vw", height: "100vh", position: "fixed", top: 0, left: 0 }} />;
 };
 
-/** 📌 触发粒子爆炸 */
-function startParticleExplosions(app: PIXI.Application) {
-    const spawnParticles = () => {
-        console.log("💥 触发炫酷粒子爆炸");
+/** 📌 创建可拖动 + 可缩放窗口 */
+function createFloatingWindow(app: PIXI.Application) {
+    const container = new PIXI.Container();
+    app.stage.addChild(container);
 
-        const numParticles = 100; // 增加粒子数量
-        const particles: PIXI.Graphics[] = [];
+    // **窗口参数**
+    let width = 300, height = 200;
+    let dragging = false, resizing = false;
+    let dragOffset = { x: 0, y: 0 };
+    let resizeOffset = { x: 0, y: 0 };
 
-        // **随机爆炸位置**
-        const explosionX = Math.random() * app.renderer.width;
-        const explosionY = Math.random() * app.renderer.height;
+    // **窗口背景**
+    const bg = new PIXI.Graphics();
+    function drawWindow() {
+        bg.clear();
+        bg.beginFill(0x8aa6a3);
+        bg.drawRoundedRect(0, 0, width, height, 10);
+        bg.endFill();
+    }
+    drawWindow();
 
-        for (let i = 0; i < numParticles; i++) {
-            const particle = new PIXI.Graphics();
+    container.addChild(bg);
 
-            // **使用渐变颜色**
-            const baseColor = PIXI.Color.shared.setValue([
-                Math.random(),
-                Math.random(),
-                Math.random(),
-            ]).toNumber();
+    // **窗口标题栏**
+    const titleBar = new PIXI.Graphics();
+    titleBar.beginFill(0x10403b);
+    titleBar.drawRoundedRect(0, 0, width, 40, 10);
+    titleBar.endFill();
+    container.addChild(titleBar);
 
-            const glowColor = PIXI.Color.shared.setValue([
-                Math.random(),
-                Math.random(),
-                Math.random(),
-            ]).toNumber();
+    // **窗口标题**
+    const titleText = new PIXI.Text("Floating Window", {
+        fill: "#ffffff",
+        fontSize: 18,
+        fontWeight: "bold",
+    });
+    titleText.x = 15;
+    titleText.y = 10;
+    container.addChild(titleText);
 
-            // **光晕外圈**
-            const glow = new PIXI.Graphics();
-            glow.beginFill(glowColor, 0.3);
-            glow.drawCircle(0, 0, Math.random() * 10 + 10);
-            glow.endFill();
+    // **右下角拖动控制点**
+    const resizeHandle = new PIXI.Graphics();
+    function drawResizeHandle() {
+        resizeHandle.clear();
+        resizeHandle.beginFill(0x444444);
+        resizeHandle.drawRect(width - 16, height - 16, 16, 16);
+        resizeHandle.endFill();
+    }
+    drawResizeHandle();
+    container.addChild(resizeHandle);
 
-            // **粒子主体**
-            particle.beginFill(baseColor);
-            particle.drawCircle(0, 0, Math.random() * 4 + 2);
-            particle.endFill();
+    // **事件监听**
+    titleBar.eventMode = "static";
+    titleBar.on("pointerdown", (e) => {
+        dragging = true;
+        dragOffset.x = e.global.x - container.x;
+        dragOffset.y = e.global.y - container.y;
+    });
 
-            // **粒子初始位置**
-            particle.x = explosionX;
-            particle.y = explosionY;
-            glow.x = explosionX;
-            glow.y = explosionY;
+    resizeHandle.eventMode = "static";
+    resizeHandle.on("pointerdown", (e) => {
+        resizing = true;
+        resizeOffset.x = e.global.x - (container.x + width);
+        resizeOffset.y = e.global.y - (container.y + height);
+    });
 
-            // **随机速度和方向**
-            (particle as any).velocity = {
-                x: (Math.random() - 0.5) * 12,
-                y: (Math.random() - 0.5) * 12,
-                rotation: (Math.random() - 0.5) * 0.2,
-            };
-
-            (glow as any).velocity = { ...((particle as any).velocity) };
-
-            app.stage.addChild(glow);
-            app.stage.addChild(particle);
-            particles.push(particle);
-            particles.push(glow);
+    app.stage.eventMode = "static";
+    app.stage.on("pointermove", (e) => {
+        if (dragging) {
+            container.x = e.global.x - dragOffset.x;
+            container.y = e.global.y - dragOffset.y;
         }
+        if (resizing) {
+            width = Math.max(100, e.global.x - container.x - resizeOffset.x);
+            height = Math.max(80, e.global.y - container.y - resizeOffset.y);
+            drawWindow();
+            drawResizeHandle();
+        }
+    });
 
-        // **粒子动画**
-        app.ticker.add(() => {
-            particles.forEach((particle) => {
-                (particle as any).velocity.y += 0.1; // 模拟重力
-                particle.x += (particle as any).velocity.x;
-                particle.y += (particle as any).velocity.y;
-                particle.alpha *= 0.97; // 渐渐消失
-                particle.rotation += (particle as any).velocity.rotation; // 旋转粒子
+    app.stage.on("pointerup", () => {
+        dragging = false;
+        resizing = false;
+    });
 
-                // **尾迹效果**
-                (particle as any).velocity.x *= 0.98;
-                (particle as any).velocity.y *= 0.98;
+    app.stage.on("pointerupoutside", () => {
+        dragging = false;
+        resizing = false;
+    });
 
-                // **如果粒子完全透明，则删除**
-                if (particle.alpha < 0.05) {
-                    app.stage.removeChild(particle);
-                    particles.splice(particles.indexOf(particle), 1);
-                }
-            });
-        });
-
-        // **随机下一次爆炸时间（0.2 到 1.5 秒之间）**
-        const nextExplosionTime = Math.random() * (500 - 100) + 100;
-        setTimeout(spawnParticles, nextExplosionTime);
-    };
-
-    // **首次触发**
-    spawnParticles();
+    container.x = (app.renderer.width - width) / 2;
+    container.y = (app.renderer.height - height) / 2;
 }
 
 export default PixiCanvas;
