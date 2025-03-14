@@ -1,6 +1,6 @@
 
 import './App.css'
-import PixiCanvas from "./compoments/pixiapp.tsx";
+import PixiCanvas from "./compoments/PixiCanvas.tsx";
 
 function App() {
 
