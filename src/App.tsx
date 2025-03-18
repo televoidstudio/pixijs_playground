@@ -1,16 +1,15 @@
 import './App.css'
+import React from 'react';
+import DAWContainer from './components/daw/DAWContainer';
 import PixiCanvas from "./components/pixi/PixiCanvas";
 
 function App() {
-
-  return (
-  <>
-      <div style={{textAlign: "center", paddingTop: "20px"}}>
-          <h2>Pixi.js in React</h2>
-          <PixiCanvas/>
-      </div>
-  </>
-  )
+    console.log("App rendering");  // 檢查點 1
+    return (
+        <div className="App">
+            <DAWContainer />
+        </div>
+    );
 }
 
 export default App

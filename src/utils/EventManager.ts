@@ -1,10 +1,21 @@
 // Define event payload types
-export interface EventPayload {
+import { DAWEventPayload } from '../types/daw';
+import { IClip } from '../types/clip';
+
+export interface EventPayload extends DAWEventPayload {
     'window:destroyed': { id: string };
     'window:added': { id: string };
     'window:removed': { id: string };
     'window:focused': { id: string };
-    'resize:move': { window: IFloatingWindow; size: IWindowSize };
+    'resize:move': { window: any; size: any };  // 暫時使用 any
+    'daw:track:dragstart': { trackId: string; index: number };
+    'daw:track:drag': { trackId: string; y: number };
+    'daw:track:dragend': { trackId: string; finalY: number };
+    'daw:track:reordered': { trackId: string; newIndex: number };
+    'daw:clip:added': { clip: IClip };
+    'daw:clip:moved': { clip: IClip };
+    'daw:clip:resized': { clip: IClip };
+    'daw:clip:removed': { clipId: string };
 }
 
 // Improve type safety for event callbacks
