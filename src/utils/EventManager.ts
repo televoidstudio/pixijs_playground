@@ -1,38 +1,43 @@
-type EventCallback = (...args: any[]) => void;
+// Type definition for event callbacks
+export type EventCallback<T = any> = (data: T) => void;
 
+// Event management system
 export class EventManager {
-  private static instance: EventManager;
-  private events: Map<string, EventCallback[]>;
+    private static instance: EventManager;
+    private events: Map<string, Set<EventCallback>>;
 
-  private constructor() {
-    this.events = new Map();
-  }
-
-  static getInstance(): EventManager {
-    if (!EventManager.instance) {
-      EventManager.instance = new EventManager();
+    private constructor() {
+        this.events = new Map();
     }
-    return EventManager.instance;
-  }
 
-  on(event: string, callback: EventCallback) {
-    if (!this.events.has(event)) {
-      this.events.set(event, []);
+    // Get singleton instance
+    public static getInstance(): EventManager {
+        if (!EventManager.instance) {
+            EventManager.instance = new EventManager();
+        }
+        return EventManager.instance;
     }
-    this.events.get(event)?.push(callback);
-  }
 
-  emit(event: string, ...args: any[]) {
-    this.events.get(event)?.forEach(callback => callback(...args));
-  }
-
-  off(event: string, callback: EventCallback) {
-    const callbacks = this.events.get(event);
-    if (callbacks) {
-      const index = callbacks.indexOf(callback);
-      if (index !== -1) {
-        callbacks.splice(index, 1);
-      }
+    // Subscribe to an event
+    public on<T>(event: string, callback: EventCallback<T>): void {
+        if (!this.events.has(event)) {
+            this.events.set(event, new Set());
+        }
+        this.events.get(event)?.add(callback);
     }
-  }
+
+    // Unsubscribe from an event
+    public off<T>(event: string, callback: EventCallback<T>): void {
+        this.events.get(event)?.delete(callback);
+    }
+
+    // Emit an event
+    public emit<T>(event: string, data: T): void {
+        this.events.get(event)?.forEach(callback => callback(data));
+    }
+
+    // Clear all event listeners
+    public clear(): void {
+        this.events.clear();
+    }
 } 

@@ -16,109 +16,137 @@ export class FloatingWindow implements IFloatingWindow {
   public minHeight: number;
   public minimized: boolean;
 
-  private bg: PIXI.Graphics;
-  private titleBar: PIXI.Graphics;
-  private contentArea: PIXI.Container;
-  private eventManager: EventManager;
+  private readonly bg: PIXI.Graphics;
+  private readonly titleBar: PIXI.Graphics;
+  private readonly contentArea: PIXI.Container;
+  private readonly eventManager: EventManager;
   private resizeHandle: ResizableHandle | null = null;
 
   constructor(
-    private app: PIXI.Application,
+    private readonly app: PIXI.Application,
     width: number = WINDOW_DEFAULTS.DEFAULT_WIDTH,
     height: number = WINDOW_DEFAULTS.DEFAULT_HEIGHT
   ) {
+    this.initializeProperties(width, height);
+    this.initializeComponents();
+    this.setupEventListeners();
+  }
+
+  private initializeProperties(width: number, height: number): void {
     this.id = crypto.randomUUID();
-    this.container = new PIXI.Container();
     this.position = { x: 0, y: 0 };
     this.size = { width, height };
     this.titleHeight = theme.dimensions.titleHeight;
     this.minWidth = theme.dimensions.minWidth;
     this.minHeight = theme.dimensions.minHeight;
     this.minimized = false;
-    
+  }
+
+  private initializeComponents(): void {
+    this.container = new PIXI.Container();
     this.bg = new PIXI.Graphics();
     this.titleBar = new PIXI.Graphics();
     this.contentArea = new PIXI.Container();
     this.eventManager = EventManager.getInstance();
 
-    this.initialize();
+    this.container.eventMode = 'static';
+    this.app.stage.addChild(this.container);
+    this.updatePosition();
   }
 
-  private initialize(): void {
-    this.app.stage.addChild(this.container);
-    
-    // 設置初始位置
-    this.container.x = this.position.x;
-    this.container.y = this.position.y;
-    
-    // 添加點擊事件監聽，將視窗移到最上層
-    this.container.eventMode = 'static';
+  private setupEventListeners(): void {
     this.container.on('pointerdown', this.bringToFront.bind(this));
+    this.setupResizeListener();
     
     this.draw();
     this.enableDrag();
     this.enableResize();
     this.enableClose();
     this.enableMinimize();
-    
-    // 監聽 resize 事件時要保存位置
-    this.eventManager.on('resize:move', ({ window, size }) => {
-        if (window.id === this.id) {
-            const currentPosition = {
-                x: this.container.x,
-                y: this.container.y
-            };
-            this.size = size;
-            this.draw();
-            // 恢復位置
-            this.container.x = currentPosition.x;
-            this.container.y = currentPosition.y;
-            this.position = currentPosition;
-        }
-    });
 
     this.eventManager.emit('window:created', this.id);
   }
 
-  public draw(): void {
-    // 保存當前實際位置
-    const currentPosition = {
-        x: this.container.x,
-        y: this.container.y
-    };
+  private setupResizeListener(): void {
+    this.eventManager.on('resize:move', ({ window, size }) => {
+      if (window.id === this.id) {
+        const currentPosition = this.getCurrentPosition();
+        this.size = size;
+        this.draw();
+        this.restorePosition(currentPosition);
+      }
+    });
+  }
 
+  private getCurrentPosition(): IWindowPosition {
+    return {
+      x: this.container.x,
+      y: this.container.y
+    };
+  }
+
+  private updatePosition(): void {
+    this.container.x = this.position.x;
+    this.container.y = this.position.y;
+  }
+
+  private restorePosition(position: IWindowPosition): void {
+    this.container.x = position.x;
+    this.container.y = position.y;
+    this.position = position;
+  }
+
+  public draw(): void {
+    const currentPosition = this.getCurrentPosition();
+    
+    this.drawBackground();
+    this.drawTitleBar();
+    this.updateContainer();
+    
+    this.restorePosition(currentPosition);
+  }
+
+  private drawBackground(): void {
     this.bg.clear();
     this.bg.beginFill(theme.colors.window.background);
     this.bg.drawRoundedRect(0, 0, this.size.width, this.size.height, WINDOW_DEFAULTS.CORNER_RADIUS);
     this.bg.endFill();
+  }
 
+  private drawTitleBar(): void {
     this.titleBar.clear();
     this.titleBar.beginFill(theme.colors.window.titleBar);
     this.titleBar.drawRoundedRect(0, 0, this.size.width, this.titleHeight, WINDOW_DEFAULTS.CORNER_RADIUS);
     this.titleBar.endFill();
+  }
 
+  private updateContainer(): void {
     this.container.removeChildren();
     this.container.addChild(this.bg);
     this.container.addChild(this.titleBar);
 
     if (!this.minimized) {
-      this.contentArea.x = 0;
-      this.contentArea.y = this.titleHeight;
-      
-      const mask = new PIXI.Graphics();
-      mask.beginFill(0xFFFFFF);
-      mask.drawRect(0, this.titleHeight, this.size.width, this.size.height - this.titleHeight);
-      mask.endFill();
-      this.contentArea.mask = mask;
-      
-      this.container.addChild(this.contentArea);
-      this.container.addChild(mask);
+      this.setupContentArea();
     }
+  }
 
-    // 恢復實際位置
-    this.container.x = currentPosition.x;
-    this.container.y = currentPosition.y;
-    this.position = currentPosition;  // 更新 position 屬性
+  private setupContentArea(): void {
+    this.contentArea.x = 0;
+    this.contentArea.y = this.titleHeight;
+    
+    const mask = this.createContentMask();
+    this.contentArea.mask = mask;
+    
+    this.container.addChild(this.contentArea);
+    this.container.addChild(mask);
+  }
+
+  private createContentMask(): PIXI.Graphics {
+    const mask = new PIXI.Graphics();
+    mask.beginFill(0xFFFFFF);
+    mask.drawRect(0, this.titleHeight, this.size.width, this.size.height - this.titleHeight);
+    mask.endFill();
+    return mask;
   }
 
   public destroy(): void {
@@ -142,16 +170,13 @@ export class FloatingWindow implements IFloatingWindow {
     const btnSize = theme.dimensions.buttonSize;
     const padding = WINDOW_DEFAULTS.BUTTON_PADDING;
     
-    // 計算按鈕位置：靠右對齊，保留padding
     const x = this.size.width - padding - btnSize;
     const y = this.titleHeight / 2;
 
-    // 繪製關閉按鈕
     closeBtn.beginFill(theme.colors.window.closeButton);
     closeBtn.drawCircle(x, y, btnSize / 2);
     closeBtn.endFill();
 
-    // 繪製 X 符號
     closeBtn.lineStyle(2, 0xffffff);
     closeBtn.moveTo(x - 4, y - 4);
     closeBtn.lineTo(x + 4, y + 4);
@@ -160,7 +185,7 @@ export class FloatingWindow implements IFloatingWindow {
 
     closeBtn.eventMode = "static";
     closeBtn.on("pointerdown", () => {
-        this.destroy();
+      this.destroy();
     });
 
     this.titleBar.addChild(closeBtn);
@@ -171,7 +196,6 @@ export class FloatingWindow implements IFloatingWindow {
     const btnSize = theme.dimensions.buttonSize;
     const padding = WINDOW_DEFAULTS.BUTTON_PADDING;
     
-    // 計算按鈕位置：在關閉按鈕左側
     const x = this.size.width - padding * 2 - btnSize * 2;
     const y = this.titleHeight / 2 - btnSize / 2;
 
@@ -181,7 +205,7 @@ export class FloatingWindow implements IFloatingWindow {
 
     minimizeBtn.eventMode = "static";
     minimizeBtn.on("pointerdown", () => {
-        this.toggleMinimize();
+      this.toggleMinimize();
     });
 
     this.titleBar.addChild(minimizeBtn);
@@ -189,11 +213,7 @@ export class FloatingWindow implements IFloatingWindow {
 
   public toggleMinimize(): void {
     this.minimized = !this.minimized;
-    if (this.minimized) {
-      this.size.height = this.titleHeight;
-    } else {
-      this.size.height = WINDOW_DEFAULTS.DEFAULT_HEIGHT;
-    }
+    this.size.height = this.minimized ? this.titleHeight : WINDOW_DEFAULTS.DEFAULT_HEIGHT;
     this.draw();
   }
 
@@ -201,12 +221,9 @@ export class FloatingWindow implements IFloatingWindow {
     return this.contentArea;
   }
 
-  // 新增 bringToFront 方法
   private bringToFront(): void {
     if (this.app.stage.children.includes(this.container)) {
-      // 將容器從當前位置移除
       this.app.stage.removeChild(this.container);
-      // 將容器添加到最上層
       this.app.stage.addChild(this.container);
     }
   }

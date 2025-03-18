@@ -10,6 +10,25 @@ export interface IWindowSize {
   height: number;
 }
 
+export interface IWindowStyle {
+  background: number;
+  titleBar: number;
+  buttons: {
+    close: number;
+    minimize: number;
+  };
+}
+
+export interface IWindowConfig {
+  style: IWindowStyle;
+  dimensions: {
+    titleHeight: number;
+    minWidth: number;
+    minHeight: number;
+    buttonSize: number;
+  };
+}
+
 export interface IFloatingWindow {
   id: string;
   container: PIXI.Container;
@@ -28,4 +47,5 @@ export interface IFloatingWindow {
   enableMinimize(): void;
   toggleMinimize(): void;
   destroy(): void;
+  bringToFront(): void;
 } 
