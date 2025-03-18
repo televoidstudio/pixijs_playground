@@ -99,18 +99,33 @@ export class ResizableHandle {
         const animate = () => {
             if (!this.isResizing) return;
 
+            // 保存實際位置
+            const currentPosition = {
+                x: this.window.container.x,
+                y: this.window.container.y
+            };
+
+            // 計算新的尺寸
             const newWidth = this.currentSize.width + (this.targetSize.width - this.currentSize.width) * this.EASING;
             const newHeight = this.currentSize.height + (this.targetSize.height - this.currentSize.height) * this.EASING;
 
+            // 更新當前尺寸
             this.currentSize = {
                 width: Math.round(newWidth),
                 height: Math.round(newHeight)
             };
 
+            // 更新視窗尺寸
             this.window.size = { ...this.currentSize };
 
+            // 重新繪製視窗和手柄
             this.window.draw();
             this.drawHandle();
+
+            // 確保位置保持不變
+            this.window.container.x = currentPosition.x;
+            this.window.container.y = currentPosition.y;
+            this.window.position = currentPosition;
 
             this.eventManager.emit('resize:move', {
                 window: this.window,

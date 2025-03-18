@@ -46,23 +46,43 @@ export class FloatingWindow implements IFloatingWindow {
 
   private initialize(): void {
     this.app.stage.addChild(this.container);
+    
+    // 設置初始位置
+    this.container.x = this.position.x;
+    this.container.y = this.position.y;
+    
     this.draw();
     this.enableDrag();
     this.enableResize();
     this.enableClose();
     this.enableMinimize();
     
+    // 監聽 resize 事件時要保存位置
     this.eventManager.on('resize:move', ({ window, size }) => {
-      if (window.id === this.id) {
-        this.size = size;
-        this.draw();
-      }
+        if (window.id === this.id) {
+            const currentPosition = {
+                x: this.container.x,
+                y: this.container.y
+            };
+            this.size = size;
+            this.draw();
+            // 恢復位置
+            this.container.x = currentPosition.x;
+            this.container.y = currentPosition.y;
+            this.position = currentPosition;
+        }
     });
 
     this.eventManager.emit('window:created', this.id);
   }
 
   public draw(): void {
+    // 保存當前實際位置
+    const currentPosition = {
+        x: this.container.x,
+        y: this.container.y
+    };
+
     this.bg.clear();
     this.bg.beginFill(theme.colors.window.background);
     this.bg.drawRoundedRect(0, 0, this.size.width, this.size.height, WINDOW_DEFAULTS.CORNER_RADIUS);
@@ -91,8 +111,10 @@ export class FloatingWindow implements IFloatingWindow {
       this.container.addChild(mask);
     }
 
-    this.container.x = this.position.x;
-    this.container.y = this.position.y;
+    // 恢復實際位置
+    this.container.x = currentPosition.x;
+    this.container.y = currentPosition.y;
+    this.position = currentPosition;  // 更新 position 屬性
   }
 
   public destroy(): void {
