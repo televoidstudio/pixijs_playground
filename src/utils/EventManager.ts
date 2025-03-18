@@ -35,11 +35,9 @@ export type EventCallback<K extends keyof EventPayload> = (data: EventPayload[K]
 // Event management system
 export class EventManager {
     private static instance: EventManager;
-    private events: Map<string, Set<EventCallback<any>>>;
+    private listeners: Map<keyof EventPayload, Set<Function>> = new Map();
 
-    private constructor() {
-        this.events = new Map();
-    }
+    private constructor() {}
 
     // Get singleton instance
     public static getInstance(): EventManager {
@@ -49,26 +47,36 @@ export class EventManager {
         return EventManager.instance;
     }
 
+    public static emit<T extends keyof EventPayload>(event: T, data: EventPayload[T]): void {
+        EventManager.getInstance().emit(event, data);
+    }
+
     // Subscribe to an event
-    public on<K extends keyof EventPayload>(event: K, callback: EventCallback<K>): void {
-        if (!this.events.has(event)) {
-            this.events.set(event, new Set());
+    public on<T extends keyof EventPayload>(event: T, callback: (data: EventPayload[T]) => void): void {
+        if (!this.listeners.has(event)) {
+            this.listeners.set(event, new Set());
         }
-        this.events.get(event)?.add(callback);
+        this.listeners.get(event)!.add(callback);
     }
 
     // Unsubscribe from an event
-    public off<K extends keyof EventPayload>(event: K, callback: EventCallback<K>): void {
-        this.events.get(event)?.delete(callback);
+    public off<T extends keyof EventPayload>(event: T, callback: (data: EventPayload[T]) => void): void {
+        const eventListeners = this.listeners.get(event);
+        if (eventListeners) {
+            eventListeners.delete(callback);
+        }
     }
 
     // Emit an event
-    public emit<K extends keyof EventPayload>(event: K, data: EventPayload[K]): void {
-        this.events.get(event)?.forEach(callback => callback(data));
+    public emit<T extends keyof EventPayload>(event: T, data: EventPayload[T]): void {
+        const eventListeners = this.listeners.get(event);
+        if (eventListeners) {
+            eventListeners.forEach(listener => listener(data));
+        }
     }
 
     // Clear all event listeners
     public clear(): void {
-        this.events.clear();
+        this.listeners.clear();
     }
 } 
