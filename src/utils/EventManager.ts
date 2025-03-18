@@ -9,7 +9,10 @@ export interface EventPayload extends DAWEventPayload {
     'window:added': { id: string };
     'window:removed': { id: string };
     'window:focused': { id: string };
+    'window:created': { id: string };
     'resize:move': { window: any; size: any };  // 暫時使用 any
+    'resize:start': { window: any; position: any };
+    'resize:end': { window: any; size: any };
     'drag:start': { target: PIXI.Container };
     'drag:move': { target: PIXI.Container; position: { x: number; y: number } };
     'drag:end': { target: PIXI.Container };
