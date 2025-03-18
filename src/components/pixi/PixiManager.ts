@@ -1,21 +1,16 @@
 import * as PIXI from "pixi.js";
+import { EventManager } from "../../utils/EventManager";
 
-/**
- * PixiManager - 負責建立和銷毀 PixiJS Application
- */
 export class PixiManager {
-    private destroyed = false; // 🚩 用來避免重複銷毀
+    private destroyed = false;
     public app: PIXI.Application | null = null;
+    private eventManager: EventManager;
 
     constructor(private container: HTMLDivElement) {
-        // 可在這裡做一些預設屬性設定
+        this.eventManager = EventManager.getInstance();
     }
 
-    /**
-     * 初始化 PixiJS，並將 Canvas 掛載到 container
-     */
     async init() {
-        // 若已經初始化，就跳過
         if (this.app) {
             console.warn("🚨 PixiManager 已初始化，跳過 init()");
             return;
@@ -23,10 +18,7 @@ export class PixiManager {
 
         console.log("🎨 初始化 Pixi.js 應用");
 
-        // 建立 Application
         this.app = new PIXI.Application();
-
-        // PixiJS v7 的 init，讓你指定渲染參數
         await this.app.init({
             width: window.innerWidth,
             height: window.innerHeight,
@@ -35,18 +27,23 @@ export class PixiManager {
             autoDensity: true,
         });
 
-        // 將 Canvas 加入到 container
         if (this.container.childNodes.length === 0) {
             this.container.appendChild(this.app.canvas);
         }
 
-        // 你也可以在這裡做更多操作，如載入資源、建立場景等
+        this.eventManager.emit('pixi:initialized');
         console.log("✅ Pixi App Initialized");
     }
 
-    /**
-     * 銷毀 PixiJS Application
-     */
+    handleResize(width: number, height: number) {
+        if (this.app) {
+            this.app.renderer.resize(width, height);
+            this.app.canvas.style.width = `${width}px`;
+            this.app.canvas.style.height = `${height}px`;
+            this.eventManager.emit('pixi:resized', { width, height });
+        }
+    }
+
     destroy() {
         if (!this.app || this.destroyed) {
             console.warn("🚨 PixiManager 已銷毀或未初始化，跳過 destroy()");
@@ -55,8 +52,8 @@ export class PixiManager {
         this.destroyed = true;
 
         console.log("🧹 銷毀 Pixi.js 應用");
-        // 若 destroy(true) 報錯，可改成 destroy(false)
         this.app.destroy(true);
         this.app = null;
+        this.eventManager.emit('pixi:destroyed');
     }
-}
+} 
