@@ -103,9 +103,16 @@ export class Timeline extends BaseComponent {
     }
 
     public update() {
-        // 更新時間軸狀態
+        this.drawBackground();
         this.drawTimeMarkers();
-        this.cursor.position.x = this.timelineState.position * this.timelineState.gridSize;
+        // 確保游標位置更新
+        if (this.cursor && this.timelineState) {
+            this.cursor.position.x = this.timelineState.position * this.timelineState.gridSize;
+        }
+    }
+
+    public getGridSize(): number {
+        return this.timelineState.gridSize || 50; // 默認返回 50
     }
 
     public destroy() {

@@ -8,7 +8,6 @@ import { EventManager } from "../../utils/EventManager";
 export class DAWManager {
     private timeline: Timeline;
     private tracks: Map<string, Track> = new Map();
-    private clips: Map<string, Clip> = new Map();
     private timelineState: ITimeline;
     private trackContainer: PIXI.Container;
     private background: PIXI.Graphics;
@@ -82,7 +81,7 @@ export class DAWManager {
             return;
         }
         
-        track.addClip(clip);
+        track.addClip(clip, this.timeline.getGridSize());
         this.eventManager.emit('daw:clip:added', { clip });
     }
 
@@ -92,10 +91,6 @@ export class DAWManager {
             track.removeClip(clipId);
             this.eventManager.emit('daw:clip:removed', { clipId });
         }
-    }
-
-    private updateLayout() {
-        // 更新所有組件的位置和狀態
     }
 
     public setPosition(position: number) {
@@ -142,9 +137,6 @@ export class DAWManager {
         
         if (clampedNewIndex === oldIndex) return; // 如果位置沒變，直接返回
         
-        // 獲取移動方向
-        const isMovingDown = clampedNewIndex > oldIndex;
-        
         // 創建新的順序數組
         const trackOrder = tracks.map(([id]) => id);
         trackOrder.splice(oldIndex, 1);
@@ -174,8 +166,7 @@ export class DAWManager {
         // 發送重新排序事件
         this.eventManager.emit('daw:track:reordered', { 
             trackId: draggedTrackId,
-            newIndex: clampedNewIndex,
-            order: trackOrder
+            newIndex: clampedNewIndex
         });
     }
 } 

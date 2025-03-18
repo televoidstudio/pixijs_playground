@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { PixiManager } from '../pixi/PixiManager';
 import { DAWManager } from './DAWManager';
-import { useDAWSetup } from '../../hooks/useDAWSetup';
 
 const DAWContainer: React.FC = () => {
     const containerRef = useRef<HTMLDivElement | null>(null);
@@ -14,7 +13,7 @@ const DAWContainer: React.FC = () => {
         const initDAW = async () => {
             console.log("1. Starting DAW initialization");  // 檢查點 1
             
-            pixiManagerRef.current = new PixiManager(containerRef.current);
+            pixiManagerRef.current = new PixiManager(containerRef.current!);
             await pixiManagerRef.current.init();
             
             if (pixiManagerRef.current?.app) {
