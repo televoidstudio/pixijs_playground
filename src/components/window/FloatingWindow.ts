@@ -7,19 +7,19 @@ import { WINDOW_DEFAULTS } from "../../config/constants";
 import { EventManager } from "../../utils/EventManager";
 
 export class FloatingWindow implements IFloatingWindow {
-  public readonly id!: string;
-  public container!: PIXI.Container;
-  public position!: IWindowPosition;
-  public size!: IWindowSize;
-  public titleHeight!: number;
-  public minWidth!: number;
-  public minHeight!: number;
-  public minimized!: boolean;
+  public readonly id: string;
+  public container: PIXI.Container;
+  public position: IWindowPosition;
+  public size: IWindowSize;
+  public titleHeight: number;
+  public minWidth: number;
+  public minHeight: number;
+  public minimized: boolean;
 
-  private bg = new PIXI.Graphics();
-  private titleBar = new PIXI.Graphics();
-  private contentArea = new PIXI.Container();
-  private eventManager = EventManager.getInstance();
+  private readonly bg: PIXI.Graphics;
+  private readonly titleBar: PIXI.Graphics;
+  private readonly contentArea: PIXI.Container;
+  private readonly eventManager: EventManager;
   private resizeHandle: ResizableHandle | null = null;
 
   constructor(
@@ -33,7 +33,7 @@ export class FloatingWindow implements IFloatingWindow {
   }
 
   private initializeProperties(width: number, height: number): void {
-    (this as any).id = crypto.randomUUID();
+    this.id = crypto.randomUUID();
     this.position = { x: 0, y: 0 };
     this.size = { width, height };
     this.titleHeight = theme.dimensions.titleHeight;
@@ -44,7 +44,11 @@ export class FloatingWindow implements IFloatingWindow {
 
   private initializeComponents(): void {
     this.container = new PIXI.Container();
-    
+    this.bg = new PIXI.Graphics();
+    this.titleBar = new PIXI.Graphics();
+    this.contentArea = new PIXI.Container();
+    this.eventManager = EventManager.getInstance();
+
     this.container.eventMode = 'static';
     this.app.stage.addChild(this.container);
     this.updatePosition();
@@ -60,7 +64,7 @@ export class FloatingWindow implements IFloatingWindow {
     this.enableClose();
     this.enableMinimize();
 
-    this.eventManager.emit('window:added', { id: this.id });
+    this.eventManager.emit('window:created', this.id);
   }
 
   private setupResizeListener(): void {
@@ -146,7 +150,7 @@ export class FloatingWindow implements IFloatingWindow {
   }
 
   public destroy(): void {
-    this.eventManager.emit('window:destroyed', { id: this.id });
+    this.eventManager.emit('window:destroyed', this.id);
     this.app.stage.removeChild(this.container);
     this.container.destroy();
   }
@@ -169,7 +173,7 @@ export class FloatingWindow implements IFloatingWindow {
     const x = this.size.width - padding - btnSize;
     const y = this.titleHeight / 2;
 
-    closeBtn.beginFill(theme.colors.window.buttons.close.default);
+    closeBtn.beginFill(theme.colors.window.closeButton);
     closeBtn.drawCircle(x, y, btnSize / 2);
     closeBtn.endFill();
 
@@ -195,7 +199,7 @@ export class FloatingWindow implements IFloatingWindow {
     const x = this.size.width - padding * 2 - btnSize * 2;
     const y = this.titleHeight / 2 - btnSize / 2;
 
-    minimizeBtn.beginFill(theme.colors.window.buttons.minimize.default);
+    minimizeBtn.beginFill(theme.colors.window.minimizeButton);
     minimizeBtn.drawRect(x, y, btnSize, btnSize);
     minimizeBtn.endFill();
 
@@ -217,9 +221,10 @@ export class FloatingWindow implements IFloatingWindow {
     return this.contentArea;
   }
 
-  public bringToFront(): void {
-    if (this.container.parent) {
-      this.container.parent.addChild(this.container);
+  private bringToFront(): void {
+    if (this.app.stage.children.includes(this.container)) {
+      this.app.stage.removeChild(this.container);
+      this.app.stage.addChild(this.container);
     }
   }
 } 

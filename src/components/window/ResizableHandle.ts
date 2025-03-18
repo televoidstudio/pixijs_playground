@@ -62,10 +62,7 @@ export class ResizableHandle {
         window.addEventListener('pointerup', this.globalPointerUp);
         
         this.startAnimation();
-        this.eventManager.emit('resize:start', { 
-            window: this.window,
-            position: this.startPosition
-        });
+        this.eventManager.emit('resize:start', { window: this.window });
     }
 
     private onResizeMove(event: PIXI.FederatedPointerEvent) {
@@ -93,10 +90,7 @@ export class ResizableHandle {
         window.removeEventListener('pointerup', this.globalPointerUp);
         
         this.stopAnimation();
-        this.eventManager.emit('resize:end', { 
-            window: this.window,
-            size: this.currentSize
-        });
+        this.eventManager.emit('resize:end', { window: this.window });
     }
 
     private startAnimation() {

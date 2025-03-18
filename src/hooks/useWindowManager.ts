@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { WindowManager } from '../utils/managers/WindowManager';
-import { FloatingWindow } from '../components/window/FloatingWindow';
-import * as PIXI from 'pixi.js';
+import { IFloatingWindow } from '../types/window';
 
 export function useWindowManager() {
     const windowManager = WindowManager.getInstance();

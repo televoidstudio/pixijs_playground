@@ -1,12 +1,14 @@
 import React, { useEffect, useRef } from "react";
 import { PixiManager } from "./PixiManager";
 import { FloatingWindow } from "../window/FloatingWindow";
+import { EventManager } from "../../utils/EventManager";
 import * as PIXI from "pixi.js";
 
 const PixiCanvas: React.FC = () => {
     const containerRef = useRef<HTMLDivElement | null>(null);
     const pixiManagerRef = useRef<PixiManager | null>(null);
     const contextMenuRef = useRef<PIXI.Container | null>(null);
+    const eventManagerRef = useRef<EventManager>(EventManager.getInstance());
 
     useEffect(() => {
         if (!containerRef.current) return;

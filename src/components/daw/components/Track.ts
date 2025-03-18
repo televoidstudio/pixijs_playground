@@ -238,10 +238,8 @@ export class Track extends BaseComponent {
         }
     }
 
-    public updateClips() {
-        this.clips.forEach(clip => {
-            clip.update();
-        });
+    public updateClips(gridSize: number) {
+        this.clips.forEach(clip => clip.update(gridSize));
     }
 
     public destroy() {

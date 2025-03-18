@@ -33,26 +33,29 @@ export const palette = {
 
 // Window theme configuration
 export const theme = {
-    window: {
-        background: 0x2C2C2C,
-        titleBar: 0x3C3C3C,
-        titleBarHover: 0x4C4C4C,
-        border: 0x4C4C4C,
-        buttons: {
-            close: {
-                default: 0xFF5555,
-                hover: 0xFF7777,
-            },
-            minimize: {
-                default: 0x55FF55,
-                hover: 0x77FF77,
-            },
+    colors: {
+        window: {
+            background: palette.background.secondary,
+            titleBar: palette.primary.main,
+            titleBarHover: palette.primary.light,
+            border: palette.primary.light,
+            buttons: {
+                close: {
+                    default: palette.accent.red,
+                    hover: 0xFF7070    // Lighter red on hover
+                },
+                minimize: {
+                    default: palette.accent.blue,
+                    hover: 0x47B9FF    // Lighter blue on hover
+                }
+            }
         },
-    },
-    contextMenu: {
-        background: 0x2C2C2C,
-        hover: 0x3C3C3C,
-        text: 0xFFFFFF,
+        contextMenu: {
+            background: palette.background.secondary,
+            hoverBackground: palette.primary.light,
+            text: palette.text.primary,
+            border: palette.primary.main
+        }
     },
     dimensions: {
         titleHeight: 32,          // Slightly smaller title bar
