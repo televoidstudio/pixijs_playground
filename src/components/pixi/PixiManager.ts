@@ -12,26 +12,26 @@ export class PixiManager {
 
     async init() {
         if (this.app) {
-            console.warn("🚨 PixiManager 已初始化，跳過 init()");
+            console.warn("🚨 Pixi.js 已初始化，跳過 init()");
             return;
         }
 
-        console.log("🎨 初始化 Pixi.js 應用");
-
+        console.log("🔄 初始化 Pixi.js 應用程式");
         this.app = new PIXI.Application();
         await this.app.init({
-            width: window.innerWidth,
-            height: window.innerHeight,
-            backgroundColor: 0x1a1a1a,
+            background: 0x2d2d2d,
+            width: this.container.clientWidth,
+            height: this.container.clientHeight,
+            antialias: true,
             resolution: window.devicePixelRatio || 1,
-            autoDensity: true,
+            autoDensity: true
         });
 
         if (this.container.childNodes.length === 0) {
             this.container.appendChild(this.app.canvas);
         }
 
-        this.eventManager.emit('pixi:initialized');
+        this.eventManager.emit('pixi:initialized', undefined);
         console.log("✅ Pixi App Initialized");
     }
 
@@ -54,6 +54,6 @@ export class PixiManager {
         console.log("🧹 銷毀 Pixi.js 應用");
         this.app.destroy(true);
         this.app = null;
-        this.eventManager.emit('pixi:destroyed');
+        this.eventManager.emit('pixi:destroyed', undefined);
     }
 } 

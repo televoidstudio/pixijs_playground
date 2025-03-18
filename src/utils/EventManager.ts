@@ -1,6 +1,8 @@
 // Define event payload types
 import { DAWEventPayload } from '../types/daw';
-import { IClip } from '../types/clip';
+import * as PIXI from 'pixi.js';
+// 假設 IClip 在 daw 裡面
+import { IClip } from '../types/daw';
 
 export interface EventPayload extends DAWEventPayload {
     'window:destroyed': { id: string };
@@ -8,6 +10,12 @@ export interface EventPayload extends DAWEventPayload {
     'window:removed': { id: string };
     'window:focused': { id: string };
     'resize:move': { window: any; size: any };  // 暫時使用 any
+    'drag:start': { target: PIXI.Container };
+    'drag:move': { target: PIXI.Container; position: { x: number; y: number } };
+    'drag:end': { target: PIXI.Container };
+    'pixi:initialized': void;
+    'pixi:resized': { width: number; height: number };
+    'pixi:destroyed': void;
     'daw:track:dragstart': { trackId: string; index: number };
     'daw:track:drag': { trackId: string; y: number };
     'daw:track:dragend': { trackId: string; finalY: number };
@@ -47,7 +55,7 @@ export class EventManager {
     }
 
     // Unsubscribe from an event
-    public off<T>(event: string, callback: EventCallback<T>): void {
+    public off<K extends keyof EventPayload>(event: K, callback: EventCallback<K>): void {
         this.events.get(event)?.delete(callback);
     }
 

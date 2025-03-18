@@ -1,7 +1,6 @@
 import * as PIXI from "pixi.js";
 import { Timeline } from "./components/Timeline";
 import { Track } from "./components/Track";
-import { Clip } from "./components/Clip";
 import { ITrack, ITimeline, IClip } from "../../types/daw";
 import { EventManager } from "../../utils/EventManager";
 
@@ -106,7 +105,7 @@ export class DAWManager {
         this.timeline.update();
         this.tracks.forEach(track => {
             track.update();
-            track.updateClips(this.timelineState.gridSize);
+            track.updateClips();
         });
     }
 

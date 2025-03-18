@@ -221,10 +221,9 @@ export class FloatingWindow implements IFloatingWindow {
     return this.contentArea;
   }
 
-  private bringToFront(): void {
-    if (this.app.stage.children.includes(this.container)) {
-      this.app.stage.removeChild(this.container);
-      this.app.stage.addChild(this.container);
+  public bringToFront(): void {
+    if (this.container.parent) {
+      this.container.parent.addChild(this.container);
     }
   }
 } 
