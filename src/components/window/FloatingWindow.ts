@@ -51,6 +51,10 @@ export class FloatingWindow implements IFloatingWindow {
     this.container.x = this.position.x;
     this.container.y = this.position.y;
     
+    // 添加點擊事件監聽，將視窗移到最上層
+    this.container.eventMode = 'static';
+    this.container.on('pointerdown', this.bringToFront.bind(this));
+    
     this.draw();
     this.enableDrag();
     this.enableResize();
@@ -135,22 +139,28 @@ export class FloatingWindow implements IFloatingWindow {
 
   public enableClose(): void {
     const closeBtn = new PIXI.Graphics();
-    closeBtn.beginFill(theme.colors.window.closeButton);
     const btnSize = theme.dimensions.buttonSize;
-    closeBtn.drawCircle(this.size.width - btnSize - WINDOW_DEFAULTS.BUTTON_PADDING, this.titleHeight / 2, btnSize / 2);
+    const padding = WINDOW_DEFAULTS.BUTTON_PADDING;
+    
+    // 計算按鈕位置：靠右對齊，保留padding
+    const x = this.size.width - padding - btnSize;
+    const y = this.titleHeight / 2;
+
+    // 繪製關閉按鈕
+    closeBtn.beginFill(theme.colors.window.closeButton);
+    closeBtn.drawCircle(x, y, btnSize / 2);
     closeBtn.endFill();
 
+    // 繪製 X 符號
     closeBtn.lineStyle(2, 0xffffff);
-    const cx = this.size.width - btnSize - WINDOW_DEFAULTS.BUTTON_PADDING;
-    const cy = this.titleHeight / 2;
-    closeBtn.moveTo(cx - 4, cy - 4);
-    closeBtn.lineTo(cx + 4, cy + 4);
-    closeBtn.moveTo(cx + 4, cy - 4);
-    closeBtn.lineTo(cx - 4, cy + 4);
+    closeBtn.moveTo(x - 4, y - 4);
+    closeBtn.lineTo(x + 4, y + 4);
+    closeBtn.moveTo(x + 4, y - 4);
+    closeBtn.lineTo(x - 4, y + 4);
 
     closeBtn.eventMode = "static";
     closeBtn.on("pointerdown", () => {
-      this.destroy();
+        this.destroy();
     });
 
     this.titleBar.addChild(closeBtn);
@@ -158,19 +168,20 @@ export class FloatingWindow implements IFloatingWindow {
 
   public enableMinimize(): void {
     const minimizeBtn = new PIXI.Graphics();
-    minimizeBtn.beginFill(theme.colors.window.minimizeButton);
     const btnSize = theme.dimensions.buttonSize;
-    minimizeBtn.drawRect(
-      this.size.width - btnSize * 2 - WINDOW_DEFAULTS.BUTTON_PADDING * 2,
-      this.titleHeight / 2 - btnSize / 2,
-      btnSize,
-      btnSize
-    );
+    const padding = WINDOW_DEFAULTS.BUTTON_PADDING;
+    
+    // 計算按鈕位置：在關閉按鈕左側
+    const x = this.size.width - padding * 2 - btnSize * 2;
+    const y = this.titleHeight / 2 - btnSize / 2;
+
+    minimizeBtn.beginFill(theme.colors.window.minimizeButton);
+    minimizeBtn.drawRect(x, y, btnSize, btnSize);
     minimizeBtn.endFill();
 
     minimizeBtn.eventMode = "static";
     minimizeBtn.on("pointerdown", () => {
-      this.toggleMinimize();
+        this.toggleMinimize();
     });
 
     this.titleBar.addChild(minimizeBtn);
@@ -188,5 +199,15 @@ export class FloatingWindow implements IFloatingWindow {
 
   public getContentContainer(): PIXI.Container {
     return this.contentArea;
+  }
+
+  // 新增 bringToFront 方法
+  private bringToFront(): void {
+    if (this.app.stage.children.includes(this.container)) {
+      // 將容器從當前位置移除
+      this.app.stage.removeChild(this.container);
+      // 將容器添加到最上層
+      this.app.stage.addChild(this.container);
+    }
   }
 } 
