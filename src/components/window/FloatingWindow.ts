@@ -20,6 +20,7 @@ export class FloatingWindow implements IFloatingWindow {
   private titleBar: PIXI.Graphics;
   private contentArea: PIXI.Container;
   private eventManager: EventManager;
+  private resizeHandle: ResizableHandle | null = null;
 
   constructor(
     private app: PIXI.Application,
@@ -27,14 +28,14 @@ export class FloatingWindow implements IFloatingWindow {
     height: number = WINDOW_DEFAULTS.DEFAULT_HEIGHT
   ) {
     this.id = crypto.randomUUID();
-    this.size = { width, height };
+    this.container = new PIXI.Container();
     this.position = { x: 0, y: 0 };
+    this.size = { width, height };
     this.titleHeight = theme.dimensions.titleHeight;
     this.minWidth = theme.dimensions.minWidth;
     this.minHeight = theme.dimensions.minHeight;
     this.minimized = false;
     
-    this.container = new PIXI.Container();
     this.bg = new PIXI.Graphics();
     this.titleBar = new PIXI.Graphics();
     this.contentArea = new PIXI.Container();
@@ -51,6 +52,13 @@ export class FloatingWindow implements IFloatingWindow {
     this.enableClose();
     this.enableMinimize();
     
+    this.eventManager.on('resize:move', ({ window, size }) => {
+      if (window.id === this.id) {
+        this.size = size;
+        this.draw();
+      }
+    });
+
     this.eventManager.emit('window:created', this.id);
   }
 
@@ -70,9 +78,21 @@ export class FloatingWindow implements IFloatingWindow {
     this.container.addChild(this.titleBar);
 
     if (!this.minimized) {
+      this.contentArea.x = 0;
       this.contentArea.y = this.titleHeight;
+      
+      const mask = new PIXI.Graphics();
+      mask.beginFill(0xFFFFFF);
+      mask.drawRect(0, this.titleHeight, this.size.width, this.size.height - this.titleHeight);
+      mask.endFill();
+      this.contentArea.mask = mask;
+      
       this.container.addChild(this.contentArea);
+      this.container.addChild(mask);
     }
+
+    this.container.x = this.position.x;
+    this.container.y = this.position.y;
   }
 
   public destroy(): void {
@@ -86,7 +106,9 @@ export class FloatingWindow implements IFloatingWindow {
   }
 
   public enableResize(): void {
-    new ResizableHandle(this);
+    if (!this.resizeHandle) {
+      this.resizeHandle = new ResizableHandle(this);
+    }
   }
 
   public enableClose(): void {
