@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { PixiManager } from '../core/managers/PixiManager';
-import { WindowManager } from '../core/managers/WindowManager';
+import { PixiManager } from '../components/pixi/PixiManager';
+import { WindowManager } from '../utils/WindowManager';
 
 // Custom hook for managing PIXI application
 export function usePixiApp() {
@@ -9,18 +9,19 @@ export function usePixiApp() {
     const windowManagerRef = useRef<WindowManager>(WindowManager.getInstance());
 
     useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
+        if (!containerRef.current) return;
 
+        // Initialize PIXI application
         const initPixiApp = async () => {
             if (!pixiManagerRef.current) {
-                pixiManagerRef.current = new PixiManager(container);
+                pixiManagerRef.current = new PixiManager(containerRef.current);
                 await pixiManagerRef.current.init();
             }
         };
 
-        initPixiApp().catch(console.error);
+        initPixiApp();
 
+        // Cleanup on unmount
         return () => {
             pixiManagerRef.current?.destroy();
             pixiManagerRef.current = null;
