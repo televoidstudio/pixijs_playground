@@ -1,10 +1,19 @@
-// Type definition for event callbacks
-export type EventCallback<T = any> = (data: T) => void;
+// Define event payload types
+export interface EventPayload {
+    'window:destroyed': { id: string };
+    'window:added': { id: string };
+    'window:removed': { id: string };
+    'window:focused': { id: string };
+    'resize:move': { window: IFloatingWindow; size: IWindowSize };
+}
+
+// Improve type safety for event callbacks
+export type EventCallback<K extends keyof EventPayload> = (data: EventPayload[K]) => void;
 
 // Event management system
 export class EventManager {
     private static instance: EventManager;
-    private events: Map<string, Set<EventCallback>>;
+    private events: Map<string, Set<EventCallback<any>>>;
 
     private constructor() {
         this.events = new Map();
@@ -19,7 +28,7 @@ export class EventManager {
     }
 
     // Subscribe to an event
-    public on<T>(event: string, callback: EventCallback<T>): void {
+    public on<K extends keyof EventPayload>(event: K, callback: EventCallback<K>): void {
         if (!this.events.has(event)) {
             this.events.set(event, new Set());
         }
@@ -32,7 +41,7 @@ export class EventManager {
     }
 
     // Emit an event
-    public emit<T>(event: string, data: T): void {
+    public emit<K extends keyof EventPayload>(event: K, data: EventPayload[K]): void {
         this.events.get(event)?.forEach(callback => callback(data));
     }
 
