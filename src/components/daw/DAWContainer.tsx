@@ -81,55 +81,15 @@ const DAWContainer: React.FC = () => {
                 position: "fixed",
                 top: 0,
                 left: 0,
-                backgroundColor: '#1a1a1a',
-                display: 'flex',
-                flexDirection: 'column'
+                backgroundColor: '#1a1a1a'
             }}
         >
-            {/* 頂部控制欄 */}
-            <div
-                style={{
-                    height: "40px",
-                    backgroundColor: "#2a2a2a",
-                    borderBottom: "1px solid #333",
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 20px"
-                }}
-            >
-                <button
-                    style={{
-                        backgroundColor: "#3a3a3a",
-                        border: "none",
-                        color: "#fff",
-                        padding: "5px 15px",
-                        borderRadius: "4px",
-                        marginRight: "10px",
-                        cursor: "pointer"
-                    }}
-                >
-                    播放
-                </button>
-                <button
-                    style={{
-                        backgroundColor: "#3a3a3a",
-                        border: "none",
-                        color: "#fff",
-                        padding: "5px 15px",
-                        borderRadius: "4px",
-                        marginRight: "10px",
-                        cursor: "pointer"
-                    }}
-                >
-                    停止
-                </button>
-            </div>
-
-            {/* DAW 內容區域 */}
+            {/* 移除舊的 HTML 頂部控制欄 */}
             <div
                 ref={containerRef}
                 style={{
-                    flex: 1,
+                    width: "100%",
+                    height: "100%",
                     position: "relative"
                 }}
             />
