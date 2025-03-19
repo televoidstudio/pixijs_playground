@@ -232,8 +232,8 @@ export class TopBar extends BaseComponent {
         this.updateComponentsPosition();
     }
 
-    public setTime(milliseconds: number) {
-        this.timeDisplay.setTime(milliseconds);
+    public setBeat(beat: number) {
+        this.timeDisplay.setBeat(beat);
     }
 
     public setBPM(bpm: number) {

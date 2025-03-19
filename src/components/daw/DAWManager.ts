@@ -258,14 +258,13 @@ export class DAWManager {
         const deltaTime = (currentTime - this.lastTimestamp) / 1000; // 轉換為秒
         this.lastTimestamp = currentTime;
 
-        // 修正：直接使用 BPM 來計算每秒移動的網格數
-        // 120 BPM = 每秒 2 拍 = 每秒移動 2 個網格
-        const gridsPerSecond = this.bpm / DAWManager.SECONDS_PER_MINUTE;
-        const gridDelta = deltaTime * gridsPerSecond;
+        // 計算每秒移動的拍數
+        const beatsPerSecond = this.bpm / DAWManager.SECONDS_PER_MINUTE;
+        const beatDelta = deltaTime * beatsPerSecond;
 
         // 更新 playhead 位置
         const currentPosition = this.playhead.getPosition();
-        const newPosition = currentPosition + gridDelta;
+        const newPosition = currentPosition + beatDelta;
         this.playhead.setPosition(newPosition);
 
         // 更新時間顯示
@@ -276,9 +275,8 @@ export class DAWManager {
 
     private updateTimeFromPlayhead() {
         const position = this.playhead.getPosition();
-        // 修正：使用正確的 BPM 計算時間
-        const timeInSeconds = (position * DAWManager.SECONDS_PER_MINUTE) / this.bpm;
-        this.topBar.setTime(timeInSeconds * 1000);
+        // 直接使用網格位置作為拍數（因為一個網格就是一拍）
+        this.topBar.setBeat(position);
     }
 
     private play() {
