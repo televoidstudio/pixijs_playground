@@ -4,5 +4,5 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: './', // 這很重要，確保在 GitHub Pages 上正確加載資源
+  base: '/pixijs_playground/', // 已更新為你的倉庫名稱
 })
