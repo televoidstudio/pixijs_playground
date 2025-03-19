@@ -307,10 +307,23 @@ export class DAWManager {
     }
 
     private stop() {
-        this.pause();
+        // 先停止播放狀態
+        this.isPlaying = false;
+        
+        // 取消動畫幀
+        if (this.animationFrameId !== null) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+        
+        // 重置 playhead 位置
         this.playhead.setPosition(0);
-        // 停止時更新時間顯示為 0
-        this.topBar.setTime(0);
+        
+        // 更新時間顯示
+        this.updateTimeFromPlayhead();
+        
+        // 重置時間戳
+        this.lastTimestamp = 0;
     }
 
     private getSecondsPerBeat(): number {
