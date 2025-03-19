@@ -46,11 +46,15 @@ export class TimeDisplay extends BaseComponent {
 
     public setTime(milliseconds: number) {
         this.currentTime = milliseconds;
-        const minutes = Math.floor(milliseconds / 60000);
-        const seconds = Math.floor((milliseconds % 60000) / 1000);
-        const ms = milliseconds % 1000;
+        
+        // 計算分鐘、秒和毫秒
+        const totalSeconds = Math.floor(milliseconds / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        const ms = Math.floor((milliseconds % 1000) / 10); // 只顯示前兩位
 
-        this.timeText.text = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}:${ms.toString().padStart(3, '0')}`;
+        // 格式化時間顯示
+        this.timeText.text = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
     }
 
     public getWidth(): number {
@@ -59,5 +63,9 @@ export class TimeDisplay extends BaseComponent {
 
     public destroy() {
         this.container.destroy({ children: true });
+    }
+
+    public update() {
+        // TimeDisplay 不需要每幀更新
     }
 } 

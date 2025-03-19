@@ -9,6 +9,9 @@ import { Playhead } from "./components/Playhead";
 
 export class DAWManager {
     private static readonly TOP_BAR_HEIGHT = 40;
+    private static readonly BEATS_PER_BAR = 4; // 每小節的拍數
+    private static readonly SECONDS_PER_MINUTE = 60;
+    private static readonly GRIDS_PER_BEAT = 1; // 每拍幾個格子
     
     private timeline: Timeline;
     private tracks: Map<string, Track> = new Map();
@@ -21,6 +24,8 @@ export class DAWManager {
     private playhead: Playhead;
     private isPlaying: boolean = false;
     private lastTimestamp: number = 0;
+    private animationFrameId: number | null = null;
+    private bpm: number = 60;
 
     constructor(private app: PIXI.Application) {
         console.log("DAWManager constructor called");  // 檢查點 1
@@ -34,7 +39,7 @@ export class DAWManager {
             zoom: 1,
             gridSize: 50,
             isPlaying: false,
-            bpm: 120
+            bpm: 60
         };
 
         // 創建背景
@@ -62,11 +67,16 @@ export class DAWManager {
         this.playhead.setPosition(0);
         
         // 設置動畫循環
-        this.app.ticker.add(this.update.bind(this));
+        // this.app.ticker.add(this.update.bind(this));
+        
+        // 設置初始 BPM
+        this.setBPM(this.timelineState.bpm);
         
         // 初始化
         this.init();
         this.setupTrackEvents();
+        this.setupTransportEvents();
+        this.setupPlayheadEvents();
     }
 
     private init() {
@@ -96,6 +106,11 @@ export class DAWManager {
         
         // 設置事件監聽
         window.addEventListener('resize', this.handleResize.bind(this));
+        
+        // 添加 BPM 變更事件監聽
+        this.eventManager.on('daw:bpm:change', (data: { bpm: number }) => {
+            this.setBPM(data.bpm);
+        });
     }
 
     public addTrack(track: ITrack) {
@@ -160,6 +175,9 @@ export class DAWManager {
         this.app.stage.removeChild(this.trackContainer);
         this.app.stage.removeChild(this.timeline.getContainer());
         this.topBar.destroy();
+        if (this.animationFrameId !== null) {
+            cancelAnimationFrame(this.animationFrameId);
+        }
     }
 
     private setupTrackEvents() {
@@ -212,37 +230,96 @@ export class DAWManager {
         });
     }
 
-    private update(delta: number) {
-        if (this.isPlaying) {
-            const currentTime = performance.now();
-            const deltaTime = currentTime - this.lastTimestamp;
-            this.lastTimestamp = currentTime;
-
-            // 更新 playhead 位置（使用 gridSize 作為基準）
-            const currentPosition = this.playhead.getPosition();
-            const newPosition = currentPosition + (deltaTime / 1000) * this.timelineState.gridSize;
-            this.playhead.setPosition(newPosition / this.timelineState.gridSize);
-
-            // 更新頂部時間顯示（轉換為毫秒）
-            this.topBar.setTime(newPosition);
-        }
+    private setupTransportEvents() {
+        this.eventManager.on('daw:transport', (data: { action: 'play' | 'pause' | 'stop' }) => {
+            switch (data.action) {
+                case 'play':
+                    this.play();
+                    break;
+                case 'pause':
+                    this.pause();
+                    break;
+                case 'stop':
+                    this.stop();
+                    break;
+            }
+        });
     }
 
-    public play() {
+    private setBPM(bpm: number) {
+        this.bpm = bpm;
+        this.topBar.setBPM(bpm);
+    }
+
+    private animate = () => {
+        if (!this.isPlaying) return;
+
+        const currentTime = performance.now();
+        const deltaTime = (currentTime - this.lastTimestamp) / 1000; // 轉換為秒
+        this.lastTimestamp = currentTime;
+
+        // 修正：直接使用 BPM 來計算每秒移動的網格數
+        // 120 BPM = 每秒 2 拍 = 每秒移動 2 個網格
+        const gridsPerSecond = this.bpm / DAWManager.SECONDS_PER_MINUTE;
+        const gridDelta = deltaTime * gridsPerSecond;
+
+        // 更新 playhead 位置
+        const currentPosition = this.playhead.getPosition();
+        const newPosition = currentPosition + gridDelta;
+        this.playhead.setPosition(newPosition);
+
+        // 更新時間顯示
+        this.updateTimeFromPlayhead();
+
+        this.animationFrameId = requestAnimationFrame(this.animate);
+    }
+
+    private updateTimeFromPlayhead() {
+        const position = this.playhead.getPosition();
+        // 修正：使用正確的 BPM 計算時間
+        const timeInSeconds = (position * DAWManager.SECONDS_PER_MINUTE) / this.bpm;
+        this.topBar.setTime(timeInSeconds * 1000);
+    }
+
+    private play() {
+        if (this.isPlaying) return;
+        
         this.isPlaying = true;
         this.lastTimestamp = performance.now();
-        this.eventManager.emit('daw:playstate', { isPlaying: true });
+        this.animate();
     }
 
-    public stop() {
+    private pause() {
+        if (!this.isPlaying) return;
+        
         this.isPlaying = false;
-        this.playhead.setPosition(0); // 這裡會回到 0:00.0 位置
+        if (this.animationFrameId !== null) {
+            cancelAnimationFrame(this.animationFrameId);
+            this.animationFrameId = null;
+        }
+        // 暫停時也更新一次時間顯示
+        this.updateTimeFromPlayhead();
+    }
+
+    private stop() {
+        this.pause();
+        this.playhead.setPosition(0);
+        // 停止時更新時間顯示為 0
         this.topBar.setTime(0);
-        this.eventManager.emit('daw:playstate', { isPlaying: false });
     }
 
-    public pause() {
-        this.isPlaying = false;
-        this.eventManager.emit('daw:playstate', { isPlaying: false });
+    private getSecondsPerBeat(): number {
+        return DAWManager.SECONDS_PER_MINUTE / this.bpm;
+    }
+
+    private getSecondsPerGrid(): number {
+        return this.getSecondsPerBeat() / DAWManager.GRIDS_PER_BEAT;
+    }
+
+    // 當 Playhead 被手動拖動時也要更新時間
+    private setupPlayheadEvents() {
+        this.eventManager.on('playhead:move', () => {
+            this.updateTimeFromPlayhead();
+        });
     }
 }

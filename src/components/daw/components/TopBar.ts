@@ -8,7 +8,10 @@ export class TopBar extends BaseComponent {
     private background: PIXI.Graphics;
     private buttonContainer: PIXI.Container;
     private timeDisplay: TimeDisplay;
-    private bpmDisplay: BPMDisplay;
+    private bpmDisplay: PIXI.Container;
+    private bpmText: PIXI.Text;
+    private currentBPM: number = 60;
+    private isPlaying: boolean = false;
 
     constructor(private width: number) {
         super();
@@ -29,9 +32,10 @@ export class TopBar extends BaseComponent {
         this.timeDisplay = new TimeDisplay();
         this.container.addChild(this.timeDisplay.getContainer());
 
-        // 創建 BPM 顯示
-        this.bpmDisplay = new BPMDisplay();
-        this.container.addChild(this.bpmDisplay.getContainer());
+        // 創建 BPM 控制並設置位置
+        const bpmControl = this.createBPMControl();
+        bpmControl.position.set(200, 5); // 設置位置在播放控制按鈕旁邊
+        this.container.addChild(bpmControl);
 
         this.drawBackground();
         this.createButtons();
@@ -50,7 +54,7 @@ export class TopBar extends BaseComponent {
         );
 
         // 設置 BPM 顯示位置
-        const bpmContainer = this.bpmDisplay.getContainer();
+        const bpmContainer = this.bpmDisplay;
         bpmContainer.position.set(
             centerX + 5,
             0
@@ -71,7 +75,7 @@ export class TopBar extends BaseComponent {
     }
 
     private createButtons() {
-        // 播放按鈕
+        // 播放/暫停按鈕
         const playButton = this.createButton("播放", 0x3a3a3a);
         playButton.position.set(0, (TopBar.HEIGHT - 30) / 2);
         this.buttonContainer.addChild(playButton);
@@ -82,8 +86,25 @@ export class TopBar extends BaseComponent {
         this.buttonContainer.addChild(stopButton);
 
         // 設置按鈕事件
-        this.setupButtonEvents(playButton, 'play');
-        this.setupButtonEvents(stopButton, 'stop');
+        playButton.on('pointerdown', () => {
+            this.isPlaying = !this.isPlaying;
+            const buttonText = playButton.getChildAt(1) as PIXI.Text;
+            buttonText.text = this.isPlaying ? "暫停" : "播放";
+            
+            this.eventManager.emit('daw:transport', {
+                action: this.isPlaying ? 'play' : 'pause'
+            });
+        });
+
+        stopButton.on('pointerdown', () => {
+            this.isPlaying = false;
+            const playButtonText = playButton.getChildAt(1) as PIXI.Text;
+            playButtonText.text = "播放";
+            
+            this.eventManager.emit('daw:transport', {
+                action: 'stop'
+            });
+        });
     }
 
     private createButton(text: string, color: number): PIXI.Container {
@@ -116,29 +137,93 @@ export class TopBar extends BaseComponent {
         return button;
     }
 
-    private setupButtonEvents(button: PIXI.Container, action: 'play' | 'stop') {
-        button.on('pointerdown', () => {
-            button.scale.set(0.95);
-            this.eventManager.emit('daw:transport', { action });
+    private createBPMControl() {
+        this.bpmDisplay = new PIXI.Container();
+        
+        // 創建背景
+        const background = new PIXI.Graphics()
+            .fill({ color: 0x2d2d2d })
+            .roundRect(0, 0, 100, 30, 4);
+
+        // 創建 BPM 文字
+        this.bpmText = new PIXI.Text({
+            text: `${this.currentBPM} BPM`,
+            style: {
+                fontSize: 14,
+                fill: 0xffffff,
+                fontFamily: 'Arial'
+            }
         });
 
-        button.on('pointerup', () => {
-            button.scale.set(1);
-        });
+        // 設置文字位置
+        this.bpmText.position.set(
+            (100 - this.bpmText.width) / 2,
+            (30 - this.bpmText.height) / 2
+        );
 
-        button.on('pointerupoutside', () => {
-            button.scale.set(1);
-        });
+        // 添加到容器
+        this.bpmDisplay.addChild(background, this.bpmText);
+        
+        // 設置互動
+        this.bpmDisplay.eventMode = 'static';
+        this.bpmDisplay.cursor = 'pointer';
 
-        button.on('pointerover', () => {
-            const background = button.getChildAt(0) as PIXI.Graphics;
-            background.tint = 0x4a4a4a;
-        });
+        // 添加點擊事件
+        this.bpmDisplay.on('click', this.handleBPMClick.bind(this));
+        
+        // 添加滾輪事件
+        this.bpmDisplay.on('wheel', this.handleBPMWheel.bind(this));
 
-        button.on('pointerout', () => {
-            const background = button.getChildAt(0) as PIXI.Graphics;
-            background.tint = 0xffffff;
-        });
+        return this.bpmDisplay;
+    }
+
+    private handleBPMClick() {
+        // 創建輸入框
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.value = this.currentBPM.toString();
+        input.min = '20';
+        input.max = '300';
+        input.style.position = 'absolute';
+        input.style.width = '100px';
+        input.style.height = '30px';
+        input.style.fontSize = '14px';
+        input.style.textAlign = 'center';
+        
+        // 設置輸入框位置
+        const bounds = this.bpmDisplay.getBounds();
+        const globalPosition = this.bpmDisplay.getGlobalPosition();
+        input.style.left = `${globalPosition.x}px`;
+        input.style.top = `${globalPosition.y}px`;
+
+        // 處理完成編輯
+        const handleComplete = () => {
+            const newBPM = Math.min(300, Math.max(20, parseInt(input.value) || 60));
+            this.setBPM(newBPM);
+            this.eventManager.emit('daw:bpm:change', { bpm: newBPM });
+            document.body.removeChild(input);
+        };
+
+        input.onblur = handleComplete;
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') handleComplete();
+            if (e.key === 'Escape') document.body.removeChild(input);
+        };
+
+        document.body.appendChild(input);
+        input.focus();
+        input.select();
+    }
+
+    private handleBPMWheel(event: PIXI.FederatedWheelEvent) {
+        event.preventDefault();
+        const delta = event.deltaY > 0 ? -1 : 1;
+        const newBPM = Math.min(300, Math.max(20, this.currentBPM + delta));
+        
+        if (newBPM !== this.currentBPM) {
+            this.setBPM(newBPM);
+            this.eventManager.emit('daw:bpm:change', { bpm: newBPM });
+        }
     }
 
     public update(width: number) {
@@ -152,12 +237,19 @@ export class TopBar extends BaseComponent {
     }
 
     public setBPM(bpm: number) {
-        this.bpmDisplay.setBPM(bpm);
+        this.currentBPM = bpm;
+        if (this.bpmText) {
+            this.bpmText.text = `${bpm} BPM`;
+            // 重新置中文字
+            this.bpmText.position.set(
+                (100 - this.bpmText.width) / 2,
+                (30 - this.bpmText.height) / 2
+            );
+        }
     }
 
     public destroy() {
         this.timeDisplay.destroy();
-        this.bpmDisplay.destroy();
         this.buttonContainer.removeAllListeners();
         this.container.destroy({ children: true });
     }

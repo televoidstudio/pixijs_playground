@@ -45,13 +45,19 @@ export interface EventPayload {
     
     // New DAW events
     'daw:transport': {
-        action: 'play' | 'stop' | 'pause';
+        action: 'play' | 'pause' | 'stop';
     };
     'daw:playstate': {
         isPlaying: boolean;
     };
     'playhead:move': {
         time: number;
+    };
+    'daw:time:update': {
+        time: number;
+    };
+    'daw:bpm:change': {
+        bpm: number;
     };
 }
 
