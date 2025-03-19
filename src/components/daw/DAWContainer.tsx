@@ -56,8 +56,8 @@ const DAWContainer: React.FC = () => {
                 dawManagerRef.current.addClip({
                     id: 'test-clip-1',
                     trackId: '1',
-                    startTime: 50,
-                    duration: 200,
+                    startTime: 1,
+                    duration: 4,
                     color: 0x4CAF50,
                     name: '測試片段'
                 });
@@ -75,16 +75,65 @@ const DAWContainer: React.FC = () => {
 
     return (
         <div
-            ref={containerRef}
             style={{
                 width: "100vw",
                 height: "100vh",
                 position: "fixed",
                 top: 0,
                 left: 0,
-                backgroundColor: '#1a1a1a'
+                backgroundColor: '#1a1a1a',
+                display: 'flex',
+                flexDirection: 'column'
             }}
-        />
+        >
+            {/* 頂部控制欄 */}
+            <div
+                style={{
+                    height: "40px",
+                    backgroundColor: "#2a2a2a",
+                    borderBottom: "1px solid #333",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 20px"
+                }}
+            >
+                <button
+                    style={{
+                        backgroundColor: "#3a3a3a",
+                        border: "none",
+                        color: "#fff",
+                        padding: "5px 15px",
+                        borderRadius: "4px",
+                        marginRight: "10px",
+                        cursor: "pointer"
+                    }}
+                >
+                    播放
+                </button>
+                <button
+                    style={{
+                        backgroundColor: "#3a3a3a",
+                        border: "none",
+                        color: "#fff",
+                        padding: "5px 15px",
+                        borderRadius: "4px",
+                        marginRight: "10px",
+                        cursor: "pointer"
+                    }}
+                >
+                    停止
+                </button>
+            </div>
+
+            {/* DAW 內容區域 */}
+            <div
+                ref={containerRef}
+                style={{
+                    flex: 1,
+                    position: "relative"
+                }}
+            />
+        </div>
     );
 };
 

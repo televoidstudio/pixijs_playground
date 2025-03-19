@@ -45,9 +45,8 @@ export class EventManager {
         }
         this.events.get(event)?.add(callback);
     }
-
     // Unsubscribe from an event
-    public off<T>(event: string, callback: EventCallback<T>): void {
+    public off<K extends keyof EventPayload>(event: K, callback: EventCallback<K>): void {
         this.events.get(event)?.delete(callback);
     }
 

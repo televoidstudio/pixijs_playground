@@ -1,199 +1,132 @@
 import * as PIXI from "pixi.js";
 import { BaseComponent } from "../core/BaseComponent";
 import { ITrack, IClip } from "../../../types/daw";
-import { Clip } from "./Clip";
+import { TrackControls } from "./TrackControls";
+import { TrackContent } from "./TrackContent";
+import { TopBar } from "./TopBar";
 
 export class Track extends BaseComponent {
-    private background: PIXI.Graphics;
-    private dragHandle: PIXI.Graphics;
-    private controlsContainer: PIXI.Container;
-    private contentContainer: PIXI.Container;
-    private dragIndicator: PIXI.Graphics | null = null;
-    private isDragging: boolean = false;
+    private controls: TrackControls;
+    private content: TrackContent;
+    private gridSize: number;
+    public static readonly TIMELINE_HEIGHT = 50;
+    public static readonly TRACK_HEIGHT = 80;
+    public static readonly TOP_BAR_HEIGHT = 40;
     private dragStartY: number = 0;
-    private originalY: number = 0;
-    private clips: Map<string, Clip> = new Map();
+    private initialY: number = 0;
+    private isPreviewTarget: boolean = false;
 
-    constructor(private track: ITrack, private index: number) {
+    constructor(private track: ITrack, private index: number, gridSize: number = 50) {
         super();
-        
-        // 創建所有容器和圖形
-        this.controlsContainer = new PIXI.Container();
-        this.contentContainer = new PIXI.Container();
-        this.background = new PIXI.Graphics();
-        this.dragHandle = new PIXI.Graphics();
-        
-        // 添加子容器到主容器
-        this.container.addChild(this.controlsContainer);
-        this.container.addChild(this.contentContainer);
-        
-        // 設置內容區域位置
-        this.contentContainer.position.set(200, 0);
-        
-        // 初始化視覺元素
+        this.gridSize = gridSize;
         this.init();
-        
-        // 設置初始位置
-        this.setY(50 + (index * 80));
     }
 
     private init() {
-        this.drawTrackBackground();
-        this.createDragHandle();
-        this.createTrackControls();
-        this.setupDragEvents();
+        // 創建控制區
+        this.controls = new TrackControls(this.track);
+        this.container.addChild(this.controls.getContainer());
+
+        // 創建內容區
+        this.content = new TrackContent(this.track.id, this.gridSize);
+        this.content.getContainer().position.x = TrackControls.WIDTH;
+        this.container.addChild(this.content.getContainer());
+
+        // 設置初始位置（直接使用 index * TRACK_HEIGHT）
+        this.setY(TopBar.HEIGHT + (this.index * Track.TRACK_HEIGHT));
+
+        // 監聽控制區的拖曳事件
+        this.setupControlEvents();
     }
-
-    private createDragHandle() {
-        // 清除之前的繪製
-        this.dragHandle.clear();
-        
-        // 繪製拖動把手背景
-        this.dragHandle
-            .fill({ color: 0x444444 })
-            .rect(0, 0, 30, 80);
-            
-        // 繪製把手圖示
-        this.dragHandle
-            .fill({ color: 0x666666 })
-            .rect(8, 30, 14, 2)
-            .rect(8, 35, 14, 2)
-            .rect(8, 40, 14, 2);
-
-        // 設置把手互動屬性
-        this.dragHandle.eventMode = 'static';
-        this.dragHandle.cursor = 'grab';
-        
-        // 添加懸停效果
-        this.dragHandle.on('pointerover', () => {
-            this.dragHandle.tint = 0x666666;
-        });
-        
-        this.dragHandle.on('pointerout', () => {
-            this.dragHandle.tint = 0xFFFFFF;
-        });
-
-        // 添加到控制區域
-        this.controlsContainer.addChild(this.dragHandle);
-    }
-
-    private createTrackControls() {
-        // 控制區域背景
-        const controlsBg = new PIXI.Graphics();
-        controlsBg
-            .fill({ color: 0x333333 })
-            .rect(30, 0, 170, 80); // 30px 之後開始繪製（把手寬度）
-        
-        // 軌道名稱
-        const nameText = new PIXI.Text({
-            text: this.track.name,
-            style: {
-                fontSize: 14,
-                fill: 0xffffff,
-                fontFamily: 'Arial'
+    private setupControlEvents() {
+        this.eventManager.on('track:dragstart' as keyof EventPayload, (data: { trackId: string; y: number }) => {
+            if (data.trackId === this.track.id) {
+                this.container.alpha = 0.8;
+                this.dragStartY = data.y;
+                this.initialY = this.getY();
+                this.eventManager.emit('daw:track:dragstart', {
+                    trackId: this.track.id,
+                    index: this.index
+                });
             }
         });
-        nameText.position.set(40, 30); // 文字位置也要調整
 
-        this.controlsContainer.addChild(controlsBg, nameText);
-    }
+        this.eventManager.on('track:drag', (data: { trackId: string; y: number }) => {
+            if (data.trackId === this.track.id) {
+                const deltaY = data.y - this.dragStartY;
+                // 修改最小值計算，移除 TIMELINE_HEIGHT
+                const newY = Math.max(TopBar.HEIGHT, this.initialY + deltaY);
+                
+                if (this.container) {
+                    this.setY(newY);
+                    
+                    // 修改目標索引計算
+                    const targetIndex = Math.floor((newY - TopBar.HEIGHT) / Track.TRACK_HEIGHT);
+                    if (targetIndex !== this.index) {
+                        this.eventManager.emit('daw:track:preview', {
+                            fromId: this.track.id,
+                            fromIndex: this.index,
+                            toIndex: targetIndex
+                        });
+                    }
+                }
+            }
+        });
 
-    private drawTrackBackground() {
-        this.background.clear();
-        
-        // 繪製軌道內容區域背景
-        this.background
-            .fill({ color: 0x2a2a2a })
-            .rect(0, 0, window.innerWidth - 200, 80);
+        this.eventManager.on('track:dragend', (data: { trackId: string; y: number }) => {
+            if (data.trackId === this.track.id) {
+                this.container.alpha = 1;
+                
+                if (this.container) {
+                    this.eventManager.emit('daw:track:dragend', {
+                        trackId: this.track.id,
+                        finalY: this.getY()
+                    });
+                }
+                
+                this.dragStartY = 0;
+                this.initialY = 0;
+            }
+            
+            if (this.isPreviewTarget) {
+                this.showPreviewState(false);
+            }
+        });
 
-        // 繪製網格線
-        this.background
-            .stroke({ color: 0x333333, width: 1 });
-        
-        // 垂直網格線
-        for (let x = 0; x < window.innerWidth - 200; x += 50) {
-            this.background
-                .moveTo(x, 0)
-                .lineTo(x, 80);
-        }
-
-        // 將背景添加到內容區域
-        this.contentContainer.addChildAt(this.background, 0);
-    }
-
-    private setupDragEvents() {
-        // 只在把手上設置拖動事件
-        this.dragHandle
-            .on('pointerdown', this.onDragStart.bind(this))
-            .on('globalpointermove', this.onDragMove.bind(this))
-            .on('pointerup', this.onDragEnd.bind(this))
-            .on('pointerupoutside', this.onDragEnd.bind(this));
-    }
-
-    private onDragStart(event: PIXI.FederatedPointerEvent) {
-        this.isDragging = true;
-        this.dragStartY = event.global.y;
-        this.originalY = this.container.y;
-        
-        // 視覺效果
-        this.dragHandle.cursor = 'grabbing';
-        this.container.alpha = 0.8;
-        this.container.zIndex = 1000;
-        
-        // 添加拖動時的視覺指示
-        this.showDragIndicator();
-        
-        this.eventManager.emit('daw:track:dragstart', { 
-            trackId: this.track.id,
-            index: this.index
+        // 監聽預覽事件
+        this.eventManager.on('daw:track:preview', (data: { fromId: string; fromIndex: number; toIndex: number }) => {
+            // 如果這個軌道是目標位置
+            if (this.index === data.toIndex && this.track.id !== data.fromId) {
+                this.showPreviewState(true);
+            } else if (this.isPreviewTarget) {
+                this.showPreviewState(false);
+            }
         });
     }
 
-    private showDragIndicator() {
-        if (this.dragIndicator) {
-            this.dragIndicator.destroy();
+    private showPreviewState(show: boolean) {
+        this.isPreviewTarget = show;
+        if (show) {
+            // 顯示預覽效果
+            this.container.alpha = 0.7;
+            // 添加視覺提示（使用新的 setStrokeStyle）
+            const previewBorder = new PIXI.Graphics()
+                .setStrokeStyle({
+                    width: 2,
+                    color: 0x4CAF50
+                })
+                .drawRect(0, 0, this.container.width, Track.TRACK_HEIGHT);
+            this.container.addChild(previewBorder);
+        } else {
+            // 移除預覽效果
+            this.container.alpha = 1;
+            // 移除所有預覽相關的視覺元素
+            this.container.children.forEach(child => {
+                if (child instanceof PIXI.Graphics) {
+                    this.container.removeChild(child);
+                }
+            });
         }
-        
-        this.dragIndicator = new PIXI.Graphics();
-        this.dragIndicator
-            .fill({ color: 0xFFFFFF, alpha: 0.2 })
-            .rect(0, 0, window.innerWidth, 80);
-        
-        this.container.addChild(this.dragIndicator);
-    }
-
-    private onDragMove(event: PIXI.FederatedPointerEvent) {
-        if (!this.isDragging) return;
-
-        const deltaY = event.global.y - this.dragStartY;
-        this.setY(this.originalY + deltaY);
-
-        this.eventManager.emit('daw:track:drag', {
-            trackId: this.track.id,
-            y: this.container.y
-        });
-    }
-
-    private onDragEnd() {
-        if (!this.isDragging) return;
-
-        this.isDragging = false;
-        
-        // 恢復視覺效果
-        this.dragHandle.cursor = 'grab';
-        this.container.alpha = 1;
-        this.container.zIndex = 0;
-        
-        // 移除拖動指示器
-        if (this.dragIndicator) {
-            this.dragIndicator.destroy();
-            this.dragIndicator = null;
-        }
-
-        this.eventManager.emit('daw:track:dragend', {
-            trackId: this.track.id,
-            finalY: this.container.y
-        });
     }
 
     public setY(y: number) {
@@ -210,47 +143,29 @@ export class Track extends BaseComponent {
         return this.track.id;
     }
 
-    public update() {
-        this.drawTrackBackground();
-    }
-
-    public addClip(clip: IClip, gridSize: number) {
-        console.log(`Track ${this.track.id} adding clip:`, clip);
-        
-        const clipComponent = new Clip(clip, gridSize);
-        this.clips.set(clip.id, clipComponent);
-        
-        // 確保將 clip 添加到 contentContainer
-        this.contentContainer.addChild(clipComponent.getContainer());
-        
-        console.log(`Clip ${clip.id} added to track ${this.track.id}`, {
-            clipCount: this.clips.size,
-            containerChildren: this.contentContainer.children.length,
-            clipPosition: clipComponent.getContainer().position
-        });
+    public addClip(clip: IClip) {
+        this.content.addClip(clip);
     }
 
     public removeClip(clipId: string) {
-        const clip = this.clips.get(clipId);
-        if (clip) {
-            clip.destroy();
-            this.clips.delete(clipId);
-        }
+        this.content.removeClip(clipId);
     }
 
-    public updateClips(gridSize: number) {
-        this.clips.forEach(clip => clip.update(gridSize));
+    public update() {
+        this.content.update();
+    }
+
+    public setGridSize(size: number) {
+        this.gridSize = size;
+        this.content.setGridSize(size);
     }
 
     public destroy() {
-        this.clips.forEach(clip => clip.destroy());
-        if (this.container) {
-            this.container.removeAllListeners();
-            this.container.destroy({ children: true });
-        }
-    }
-
-    public getContainer(): PIXI.Container {
-        return this.container;
+        this.controls.destroy();
+        this.content.destroy();
+        this.eventManager.off('track:dragstart', () => {});
+        this.eventManager.off('track:drag', () => {});
+        this.eventManager.off('track:dragend', () => {});
+        this.container.destroy({ children: true });
     }
 } 
