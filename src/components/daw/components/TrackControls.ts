@@ -80,6 +80,12 @@ export class TrackControls extends BaseComponent {
             }
         });
         this.nameText.position.set(40, 30);
+        this.nameText.eventMode = 'static';
+        this.nameText.cursor = 'pointer';
+
+        // 添加點擊事件
+        this.nameText.on('click', this.handleNameClick.bind(this));
+
         this.container.addChild(this.nameText);
     }
 
@@ -122,6 +128,53 @@ export class TrackControls extends BaseComponent {
             trackId: this.track.id,
             y: event.global.y
         });
+    }
+
+    private handleNameClick() {
+        // 創建輸入框
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = this.track.name;
+        input.style.position = 'absolute';
+        input.style.width = '150px';
+        input.style.height = '24px';
+        input.style.fontSize = '14px';
+        input.style.backgroundColor = '#2d2d2d';
+        input.style.color = '#ffffff';
+        input.style.border = '1px solid #444';
+        input.style.borderRadius = '4px';
+        input.style.padding = '0 8px';
+
+        // 設置輸入框位置
+        const globalPosition = this.nameText.getGlobalPosition();
+        input.style.left = `${globalPosition.x}px`;
+        input.style.top = `${globalPosition.y}px`;
+
+        // 處理完成編輯
+        const handleComplete = () => {
+            const newName = input.value.trim() || this.track.name;
+            this.setName(newName);
+            this.eventManager.emit('track:rename', {
+                trackId: this.track.id,
+                name: newName
+            });
+            document.body.removeChild(input);
+        };
+
+        input.onblur = handleComplete;
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') handleComplete();
+            if (e.key === 'Escape') document.body.removeChild(input);
+        };
+
+        document.body.appendChild(input);
+        input.focus();
+        input.select();
+    }
+
+    public setName(name: string) {
+        this.track.name = name;
+        this.nameText.text = name;
     }
 
     public setY(y: number) {

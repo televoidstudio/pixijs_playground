@@ -168,4 +168,9 @@ export class Track extends BaseComponent {
         this.eventManager.off('track:dragend', () => {});
         this.container.destroy({ children: true });
     }
+
+    public setName(name: string) {
+        this.track.name = name;
+        this.controls.setName(name);
+    }
 } 

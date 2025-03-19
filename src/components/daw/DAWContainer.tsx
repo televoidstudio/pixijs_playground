@@ -73,6 +73,11 @@ const DAWContainer: React.FC = () => {
         };
     }, []);
 
+    // 添加右鍵選單處理
+    const handleContextMenu = (event: React.MouseEvent) => {
+        event.preventDefault();  // 阻止預設的右鍵選單
+    };
+
     return (
         <div
             style={{
@@ -83,6 +88,7 @@ const DAWContainer: React.FC = () => {
                 left: 0,
                 backgroundColor: '#1a1a1a'
             }}
+            onContextMenu={handleContextMenu}  // 添加右鍵事件處理
         >
             {/* 移除舊的 HTML 頂部控制欄 */}
             <div
@@ -92,6 +98,7 @@ const DAWContainer: React.FC = () => {
                     height: "100%",
                     position: "relative"
                 }}
+                onContextMenu={handleContextMenu}  // 內部容器也添加右鍵事件處理
             />
         </div>
     );

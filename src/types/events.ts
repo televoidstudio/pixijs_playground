@@ -59,6 +59,10 @@ export interface EventPayload {
     'daw:bpm:change': {
         bpm: number;
     };
+    'track:rename': {
+        trackId: string;
+        name: string;
+    };
 }
 
 // 使用常數來定義事件名稱

@@ -186,6 +186,13 @@ export class DAWManager {
             const newIndex = Math.floor((data.finalY - 50) / 80);
             this.reorderTracks(data.trackId, newIndex);
         });
+
+        this.eventManager.on('track:rename', (data: { trackId: string; name: string }) => {
+            const track = this.tracks.get(data.trackId);
+            if (track) {
+                track.setName(data.name);
+            }
+        });
     }
 
     private reorderTracks(draggedTrackId: string, newIndex: number) {
