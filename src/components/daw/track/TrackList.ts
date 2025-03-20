@@ -27,25 +27,21 @@ export class TrackList extends BaseComponent {
         this.tracks.set(trackData.id, track);
         this.container.addChild(track.getContainer());
         
-        this.eventManager.emit('track:added', { track: trackData });
+        this.eventManager.emit('daw:track:added', { track: trackData });
     }
 
     public moveTrack(id: string, newIndex: number): void {
         const track = this.tracks.get(id);
         if (!track) return;
 
-        // 獲取所有軌道並重新排序
         const tracks = Array.from(this.tracks.entries());
         const oldIndex = tracks.findIndex(([trackId]) => trackId === id);
         
         if (oldIndex === -1) return;
         
-        // 確保新索引在有效範圍內
         const clampedNewIndex = Math.max(0, Math.min(newIndex, tracks.length - 1));
-        
         if (clampedNewIndex === oldIndex) return;
         
-        // 創建新的順序數組
         const trackOrder = tracks.map(([trackId]) => trackId);
         trackOrder.splice(oldIndex, 1);
         trackOrder.splice(clampedNewIndex, 0, id);

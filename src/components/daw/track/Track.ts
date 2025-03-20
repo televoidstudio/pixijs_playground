@@ -62,14 +62,12 @@ export class Track extends BaseComponent {
     }
 
     private setupControlEvents() {
-        // 監聽拖動開始事件
         this.eventManager.on('track:dragstart', (data: { trackId: string; y: number }) => {
             if (data.trackId === this.track.id) {
                 this.container.alpha = 0.8;
                 this.dragStartY = data.y;
                 this.initialY = this.getY();
                 
-                // 發送 DAW 層級的拖動開始事件
                 this.eventManager.emit('daw:track:dragstart', {
                     trackId: this.track.id,
                     index: this.index
@@ -77,39 +75,35 @@ export class Track extends BaseComponent {
             }
         });
 
-        // 監聽拖動中事件
         this.eventManager.on('track:drag', (data: { trackId: string; y: number }) => {
             if (data.trackId === this.track.id) {
                 const deltaY = data.y - this.dragStartY;
-                const newY = Math.max(DAWConfig.dimensions.topBarHeight, this.initialY + deltaY);
+                const newY = Math.max(
+                    DAWConfig.dimensions.topBarHeight, 
+                    this.initialY + deltaY
+                );
                 
-                if (this.container) {
-                    this.setY(newY);
-                    
-                    // 計算目標索引
-                    const targetIndex = Math.floor(
-                        (newY - DAWConfig.dimensions.topBarHeight) / 
-                        DAWConfig.dimensions.trackHeight
-                    );
-                    
-                    // 發送預覽事件
-                    if (targetIndex !== this.index) {
-                        this.eventManager.emit('daw:track:preview', {
-                            fromId: this.track.id,
-                            fromIndex: this.index,
-                            toIndex: targetIndex
-                        });
-                    }
+                this.setY(newY);
+                
+                const targetIndex = Math.floor(
+                    (newY - DAWConfig.dimensions.topBarHeight) / 
+                    DAWConfig.dimensions.trackHeight
+                );
+                
+                if (targetIndex !== this.index) {
+                    this.eventManager.emit('daw:track:preview', {
+                        fromId: this.track.id,
+                        fromIndex: this.index,
+                        toIndex: targetIndex
+                    });
                 }
             }
         });
 
-        // 監聽拖動結束事件
         this.eventManager.on('track:dragend', (data: { trackId: string; y: number }) => {
             if (data.trackId === this.track.id) {
                 this.container.alpha = 1;
                 
-                // 發送 DAW 層級的拖動結束事件
                 this.eventManager.emit('daw:track:dragend', {
                     trackId: this.track.id,
                     finalY: this.getY()

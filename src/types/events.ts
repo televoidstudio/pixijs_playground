@@ -1,23 +1,20 @@
 import { IClip } from './clip';
-import { IFloatingWindow } from './window';
 
 export interface EventPayload {
-    // Track events
+    // Track 拖動相關事件
     'track:dragstart': { trackId: string; y: number };
     'track:drag': { trackId: string; y: number };
     'track:dragend': { trackId: string; y: number };
     'track:rename': { trackId: string; name: string };
-    'track:added': { track: ITrack };
     
-    // DAW events
+    // DAW 層級事件
     'daw:track:dragstart': { trackId: string; index: number };
     'daw:track:drag': { trackId: string; y: number };
     'daw:track:dragend': { trackId: string; finalY: number };
-    'daw:track:reordered': { trackId: string; newIndex: number };
     'daw:track:preview': { fromId: string; fromIndex: number; toIndex: number };
-    'daw:bpm:change': { bpm: number };
+    'daw:track:reordered': { trackId: string; newIndex: number };
     'daw:transport': { action: 'play' | 'pause' | 'stop' };
-    'daw:playstate': { isPlaying: boolean };
+    'daw:bpm:change': { bpm: number };
     'playhead:move': void;
     
     // Clip events

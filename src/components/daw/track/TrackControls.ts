@@ -90,11 +90,13 @@ export class TrackControls extends BaseComponent {
     }
 
     private setupDragEvents() {
-        this.dragHandle
-            .on('pointerdown', this.onDragStart.bind(this))
-            .on('globalpointermove', this.onDragMove.bind(this))
-            .on('pointerup', this.onDragEnd.bind(this))
-            .on('pointerupoutside', this.onDragEnd.bind(this));
+        this.dragHandle.eventMode = 'static';
+        this.dragHandle.cursor = 'grab';
+
+        this.dragHandle.on('pointerdown', this.onDragStart.bind(this));
+        this.dragHandle.on('globalpointermove', this.onDragMove.bind(this));
+        this.dragHandle.on('pointerup', this.onDragEnd.bind(this));
+        this.dragHandle.on('pointerupoutside', this.onDragEnd.bind(this));
     }
 
     private onDragStart(event: PIXI.FederatedPointerEvent) {
