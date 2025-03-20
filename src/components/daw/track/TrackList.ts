@@ -34,22 +34,54 @@ export class TrackList extends BaseComponent {
         const track = this.tracks.get(id);
         if (!track) return;
 
-        const { topBarHeight, trackHeight } = DAWConfig.dimensions;
-        const newY = topBarHeight + (newIndex * trackHeight);
-        track.setY(newY);
+        // 獲取所有軌道並重新排序
+        const tracks = Array.from(this.tracks.entries());
+        const oldIndex = tracks.findIndex(([trackId]) => trackId === id);
+        
+        if (oldIndex === -1) return;
+        
+        // 確保新索引在有效範圍內
+        const clampedNewIndex = Math.max(0, Math.min(newIndex, tracks.length - 1));
+        
+        if (clampedNewIndex === oldIndex) return;
+        
+        // 創建新的順序數組
+        const trackOrder = tracks.map(([trackId]) => trackId);
+        trackOrder.splice(oldIndex, 1);
+        trackOrder.splice(clampedNewIndex, 0, id);
+
+        // 更新所有軌道的位置
+        trackOrder.forEach((trackId, index) => {
+            const track = this.tracks.get(trackId);
+            if (track) {
+                const targetY = DAWConfig.dimensions.topBarHeight + 
+                              (index * DAWConfig.dimensions.trackHeight);
+                track.setY(targetY);
+            }
+        });
+
+        // 更新內部數據結構
+        const newTracks = new Map<string, Track>();
+        trackOrder.forEach(trackId => {
+            const track = this.tracks.get(trackId);
+            if (track) {
+                newTracks.set(trackId, track);
+            }
+        });
+        this.tracks = newTracks;
     }
 
-    public setPosition(x: number, y: number): void {
-        this.container.position.set(x, y);
+    public getTrack(id: string): Track | undefined {
+        return this.tracks.get(id);
     }
 
-    public setZIndex(index: number): void {
-        this.container.zIndex = index;
+    public update(): void {
+        this.tracks.forEach(track => track.update());
     }
 
-    public destroy(): void {
+    public override destroy(): void {
         this.tracks.forEach(track => track.destroy());
         this.tracks.clear();
-        super.destroy();
+        this.container.destroy();
     }
 } 

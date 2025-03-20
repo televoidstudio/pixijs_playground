@@ -6,6 +6,25 @@ export interface EventPayload {
     'track:dragstart': { trackId: string; y: number };
     'track:drag': { trackId: string; y: number };
     'track:dragend': { trackId: string; y: number };
+    'track:rename': { trackId: string; name: string };
+    'track:added': { track: ITrack };
+    
+    // DAW events
+    'daw:track:dragstart': { trackId: string; index: number };
+    'daw:track:drag': { trackId: string; y: number };
+    'daw:track:dragend': { trackId: string; finalY: number };
+    'daw:track:reordered': { trackId: string; newIndex: number };
+    'daw:track:preview': { fromId: string; fromIndex: number; toIndex: number };
+    'daw:bpm:change': { bpm: number };
+    'daw:transport': { action: 'play' | 'pause' | 'stop' };
+    'daw:playstate': { isPlaying: boolean };
+    'playhead:move': void;
+    
+    // Clip events
+    'daw:clip:added': { clip: IClip };
+    'daw:clip:moved': { clip: IClip };
+    'daw:clip:resized': { clip: IClip };
+    'daw:clip:removed': { clipId: string };
     
     // Window events
     'window:created': { id: string };
@@ -29,40 +48,13 @@ export interface EventPayload {
     'pixi:ready': { app: any };
     'pixi:resize': { width: number; height: number };
     
-    // DAW events
-    'daw:track:dragstart': { trackId: string; index: number };
-    'daw:track:drag': { trackId: string; y: number };
-    'daw:track:dragend': { trackId: string; finalY: number };
-    'daw:track:preview': { fromId: string; fromIndex: number; toIndex: number };
-    'daw:track:reordered': { trackId: string; newIndex: number };
-    'daw:clip:added': { clip: IClip };
-    'daw:clip:moved': { clip: IClip };
-    'daw:clip:resized': { clip: IClip };
-    'daw:clip:removed': { clipId: string };
-    
     // Window events
     'window:resize': { width: number; height: number };
     'window:move': { x: number; y: number };
     
     // New DAW events
-    'daw:transport': {
-        action: 'play' | 'pause' | 'stop';
-    };
-    'daw:playstate': {
-        isPlaying: boolean;
-    };
-    'playhead:move': {
-        time: number;
-    };
     'daw:time:update': {
         time: number;
-    };
-    'daw:bpm:change': {
-        bpm: number;
-    };
-    'track:rename': {
-        trackId: string;
-        name: string;
     };
 }
 

@@ -7,6 +7,7 @@ import { EventManager } from "../../utils/EventManager";
 import { TopBar } from "./components/TopBar";
 import { Playhead } from "./components/Playhead";
 import { DAWConfig } from "../../config/DAWConfig";
+import { TrackList } from "../daw/track/TrackList";
 
 /**
  * DAW 管理器類
@@ -21,7 +22,6 @@ export class DAWManager {
     
     // 核心組件
     private timeline: Timeline;                         // 時間軸組件
-    private tracks: Map<string, Track> = new Map();    // 軌道集合
     private clips: Map<string, Clip> = new Map();      // 片段集合
     private timelineState: ITimeline;                  // 時間軸狀態
     private trackContainer: PIXI.Container;            // 軌道容器
@@ -29,6 +29,7 @@ export class DAWManager {
     private eventManager: EventManager;                // 事件管理器
     private topBar: TopBar;                           // 頂部控制欄
     private playhead: Playhead;                       // 播放頭
+    private trackList: TrackList;
     
     // 播放控制相關
     private isPlaying: boolean = false;               // 是否正在播放
@@ -85,6 +86,10 @@ export class DAWManager {
         // 設置初始 BPM
         this.setBPM(this.timelineState.bpm);
         
+        // 初始化 TrackList
+        this.trackList = new TrackList(this.app);
+        this.trackContainer.addChild(this.trackList.getContainer());
+        
         // 初始化
         this.init();
         this.setupTrackEvents();
@@ -135,11 +140,9 @@ export class DAWManager {
      * @param track 軌道數據
      */
     public addTrack(track: ITrack) {
-        console.log("Adding track:", track.id);  // 檢查點 2
-        const trackComponent = new Track(track, this.tracks.size);
-        this.tracks.set(track.id, trackComponent);
-        this.trackContainer.addChild(trackComponent.getContainer());
-        console.log("Track added, container children:", this.trackContainer.children.length);  // 檢查點 3
+        console.log("Adding track:", track.id);
+        // 使用 TrackList 來添加軌道
+        this.trackList.addTrack(track);
     }
 
     /**
@@ -149,7 +152,7 @@ export class DAWManager {
     public addClip(clip: IClip) {
         console.log(`DAWManager: Adding clip ${clip.id} to track ${clip.trackId}`);
         
-        const track = this.tracks.get(clip.trackId);
+        const track = this.trackList.getTrack(clip.trackId);
         if (!track) {
             console.error(`Track ${clip.trackId} not found`);
             return;
@@ -165,7 +168,7 @@ export class DAWManager {
      * @param trackId 軌道 ID
      */
     public removeClip(clipId: string, trackId: string) {
-        const track = this.tracks.get(trackId);
+        const track = this.trackList.getTrack(trackId);
         if (track) {
             track.removeClip(clipId);
             this.eventManager.emit('daw:clip:removed', { clipId });
@@ -190,9 +193,7 @@ export class DAWManager {
             .rect(0, TopBar.HEIGHT, this.app.screen.width, this.app.screen.height - TopBar.HEIGHT);
         
         this.timeline.update();
-        this.tracks.forEach(track => {
-            track.update();
-        });
+        this.trackList.update();
         
         // 更新頂部控制欄
         this.topBar.update(this.app.screen.width);
@@ -208,7 +209,7 @@ export class DAWManager {
     public destroy() {
         window.removeEventListener('resize', this.handleResize);
         this.timeline.destroy();
-        this.tracks.forEach(track => track.destroy());
+        this.trackList.destroy();
         this.app.stage.removeChild(this.trackContainer);
         this.app.stage.removeChild(this.timeline.getContainer());
         this.topBar.destroy();
@@ -222,13 +223,15 @@ export class DAWManager {
      */
     private setupTrackEvents() {
         this.eventManager.on('daw:track:dragend', (data: { trackId: string; finalY: number }) => {
-            // 計算新的索引位置
-            const newIndex = Math.floor((data.finalY - 50) / 80);
+            const newIndex = Math.floor(
+                (data.finalY - DAWConfig.dimensions.topBarHeight) / 
+                DAWConfig.dimensions.trackHeight
+            );
             this.reorderTracks(data.trackId, newIndex);
         });
 
         this.eventManager.on('track:rename', (data: { trackId: string; name: string }) => {
-            const track = this.tracks.get(data.trackId);
+            const track = this.trackList.getTrack(data.trackId);
             if (track) {
                 track.setName(data.name);
             }
@@ -241,45 +244,13 @@ export class DAWManager {
      * @param newIndex 新的位置索引
      */
     private reorderTracks(draggedTrackId: string, newIndex: number) {
-        const tracks = Array.from(this.tracks.entries());
-        const oldIndex = tracks.findIndex(([id]) => id === draggedTrackId);
+        // 使用 TrackList 的 moveTrack 方法
+        this.trackList.moveTrack(draggedTrackId, newIndex);
         
-        if (oldIndex === -1) return;
-        
-        // 確保新索引在有效範圍內
-        const clampedNewIndex = Math.max(0, Math.min(newIndex, tracks.length - 1));
-        
-        if (clampedNewIndex === oldIndex) return;
-        
-        // 創建新的順序數組
-        const trackOrder = tracks.map(([id]) => id);
-        trackOrder.splice(oldIndex, 1);
-        trackOrder.splice(clampedNewIndex, 0, draggedTrackId);
-
-        // 更新所有軌道的位置
-        trackOrder.forEach((id, index) => {
-            const track = this.tracks.get(id);
-            if (track) {
-                const targetY = DAWConfig.dimensions.topBarHeight + 
-                              (index * DAWConfig.dimensions.trackHeight);
-                track.setY(targetY);
-            }
-        });
-
-        // 更新內部數據結構
-        const newTracks = new Map<string, Track>();
-        trackOrder.forEach(id => {
-            const track = this.tracks.get(id);
-            if (track) {
-                newTracks.set(id, track);
-            }
-        });
-        this.tracks = newTracks;
-
         // 發送重新排序事件
         this.eventManager.emit('daw:track:reordered', { 
             trackId: draggedTrackId,
-            newIndex: clampedNewIndex
+            newIndex: newIndex
         });
     }
 
