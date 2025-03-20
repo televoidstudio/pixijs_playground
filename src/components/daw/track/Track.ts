@@ -33,9 +33,28 @@ export class Track extends BaseComponent {
 
         // 設置初始位置
         const { topBarHeight, trackHeight } = DAWConfig.dimensions;
-        this.setY(topBarHeight + (this.index * trackHeight));
+        this.container.position.y = topBarHeight + (this.index * trackHeight);
 
         this.setupControlEvents();
+    }
+
+    public update(): void {
+        this.controls.update();
+        this.content.update();
+    }
+
+    public destroy(): void {
+        this.controls.destroy();
+        this.content.destroy();
+        this.container.destroy({ children: true });
+    }
+
+    public setY(y: number): void {
+        this.container.position.y = y;
+    }
+
+    public getY(): number {
+        return this.container.position.y;
     }
 
     private setupControlEvents() {
@@ -45,12 +64,22 @@ export class Track extends BaseComponent {
                 this.dragStartY = data.y;
                 this.initialY = this.getY();
                 this.eventManager.emit('track:drag:start', {
-                    id: this.track.id,
+                    trackId: this.track.id,
                     index: this.index
                 });
             }
         });
 
         // ... 其他事件處理保持不變
+    }
+
+    public setName(name: string): void {
+        this.track.name = name;
+        this.controls.updateName(name);
+    }
+
+    private showPreviewState(show: boolean): void {
+        this.isPreviewTarget = show;
+        this.container.alpha = show ? 0.7 : 1;
     }
 } 

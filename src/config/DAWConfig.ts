@@ -8,7 +8,7 @@ export const DAWConfig = {
         controlsWidth: 200
     },
     transport: {
-        defaultBPM: 60,
+        defaultBPM: 120,
         beatsPerBar: 4,
         secondsPerMinute: 60,
         gridsPerBeat: 1

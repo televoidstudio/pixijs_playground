@@ -4,8 +4,9 @@ import { IFloatingWindow } from './window';
 export interface EventPayload {
     // Track events
     'track:dragstart': { trackId: string; y: number };
+    'track:drag:start': { trackId: string; index: number };
     'track:drag': { trackId: string; y: number };
-    'track:dragend': { trackId: string; y: number };
+    'track:dragend': { trackId: string; finalY: number };
     
     // Window events
     'window:created': { id: string };
