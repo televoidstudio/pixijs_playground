@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { BaseComponent } from "../core/BaseComponent";
 import { IClip } from "../../../types/daw";
-import { Clip } from "./Clip";
+import { Clip } from "../components/Clip";
 
 export class TrackContent extends BaseComponent {
     private background: PIXI.Graphics;
@@ -71,19 +71,25 @@ export class TrackContent extends BaseComponent {
             .stroke();
     }
 
-    public addClip(clip: IClip) {
-        console.log(`Adding clip ${clip.id} to track content`);
-        
+    /**
+     * 添加片段
+     */
+    public addClip(clip: IClip): void {
         const clipComponent = new Clip(clip, this.gridSize);
         this.clips.set(clip.id, clipComponent);
         this.container.addChild(clipComponent.getContainer());
         
-        console.log(`Clip added, total clips: ${this.clips.size}`);
+        // 設置片段位置
+        clipComponent.getContainer().position.x = clip.startTime * this.gridSize;
     }
 
-    public removeClip(clipId: string) {
+    /**
+     * 移除片段
+     */
+    public removeClip(clipId: string): void {
         const clip = this.clips.get(clipId);
         if (clip) {
+            this.container.removeChild(clip.getContainer());
             clip.destroy();
             this.clips.delete(clipId);
         }

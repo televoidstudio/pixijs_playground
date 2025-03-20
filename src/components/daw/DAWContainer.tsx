@@ -79,6 +79,16 @@ const DAWContainer: React.FC = () => {
                     color: 0x4CAF50,
                     name: '測試片段'
                 });
+
+                // 添加更多測試片段
+                dawManagerRef.current.addClip({
+                    id: 'test-clip-2',
+                    trackId: '1',
+                    startTime: 6,
+                    duration: 3,
+                    color: 0x2196F3,
+                    name: '測試片段 2'
+                });
             }
         };
 

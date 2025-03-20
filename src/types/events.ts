@@ -4,9 +4,8 @@ import { IFloatingWindow } from './window';
 export interface EventPayload {
     // Track events
     'track:dragstart': { trackId: string; y: number };
-    'track:drag:start': { trackId: string; index: number };
     'track:drag': { trackId: string; y: number };
-    'track:dragend': { trackId: string; finalY: number };
+    'track:dragend': { trackId: string; y: number };
     
     // Window events
     'window:created': { id: string };
@@ -34,7 +33,8 @@ export interface EventPayload {
     'daw:track:dragstart': { trackId: string; index: number };
     'daw:track:drag': { trackId: string; y: number };
     'daw:track:dragend': { trackId: string; finalY: number };
-    'daw:track:reordered': { trackId: string; newIndex: number; order: string[] };
+    'daw:track:preview': { fromId: string; fromIndex: number; toIndex: number };
+    'daw:track:reordered': { trackId: string; newIndex: number };
     'daw:clip:added': { clip: IClip };
     'daw:clip:moved': { clip: IClip };
     'daw:clip:resized': { clip: IClip };

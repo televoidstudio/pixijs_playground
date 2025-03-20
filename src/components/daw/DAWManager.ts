@@ -1,11 +1,12 @@
 import * as PIXI from "pixi.js";
 import { Timeline } from "./components/Timeline";
-import { Track } from "./components/Track";
+import { Track } from "../daw/track/Track";
 import { Clip } from "./components/Clip";
 import { ITrack, ITimeline, IClip } from "../../types/daw";
 import { EventManager } from "../../utils/EventManager";
 import { TopBar } from "./components/TopBar";
 import { Playhead } from "./components/Playhead";
+import { DAWConfig } from "../../config/DAWConfig";
 
 /**
  * DAW 管理器類
@@ -248,7 +249,7 @@ export class DAWManager {
         // 確保新索引在有效範圍內
         const clampedNewIndex = Math.max(0, Math.min(newIndex, tracks.length - 1));
         
-        if (clampedNewIndex === oldIndex) return; // 如果位置沒變，直接返回
+        if (clampedNewIndex === oldIndex) return;
         
         // 創建新的順序數組
         const trackOrder = tracks.map(([id]) => id);
@@ -259,7 +260,8 @@ export class DAWManager {
         trackOrder.forEach((id, index) => {
             const track = this.tracks.get(id);
             if (track) {
-                const targetY = Track.TIMELINE_HEIGHT + (index * Track.TRACK_HEIGHT);
+                const targetY = DAWConfig.dimensions.topBarHeight + 
+                              (index * DAWConfig.dimensions.trackHeight);
                 track.setY(targetY);
             }
         });

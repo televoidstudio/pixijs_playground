@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { BaseComponent } from "../core/BaseComponent";
 import { ITimeline } from "../../../types/daw";
-import { TrackControls } from "./TrackControls";
+import { TrackControls } from "../track/TrackControls";
 
 export class Timeline extends BaseComponent {
     private background: PIXI.Graphics;

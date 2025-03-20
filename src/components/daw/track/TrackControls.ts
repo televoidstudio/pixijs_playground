@@ -119,14 +119,15 @@ export class TrackControls extends BaseComponent {
         });
     }
 
-    private onDragEnd(event: PIXI.FederatedPointerEvent) {
+    private onDragEnd() {
         if (!this.isDragging) return;
+        
         this.isDragging = false;
         this.dragHandle.cursor = 'grab';
-
-        this.eventManager.emit('track:dragend' as const, {
+        
+        this.eventManager.emit('track:dragend', {
             trackId: this.track.id,
-            y: event.global.y
+            y: this.container.parent.y
         });
     }
 
@@ -188,5 +189,14 @@ export class TrackControls extends BaseComponent {
     public destroy() {
         this.container.removeAllListeners();
         this.container.destroy({ children: true });
+    }
+
+    /**
+     * 更新軌道名稱
+     */
+    public updateName(name: string): void {
+        if (this.nameText) {
+            this.nameText.text = name;
+        }
     }
 } 
