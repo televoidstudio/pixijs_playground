@@ -7,26 +7,38 @@ import { EventManager } from "../../utils/EventManager";
 import { TopBar } from "./components/TopBar";
 import { Playhead } from "./components/Playhead";
 
+/**
+ * DAW 管理器類
+ * 負責管理整個數字音頻工作站的核心功能
+ */
 export class DAWManager {
-    private static readonly TOP_BAR_HEIGHT = 40;
-    private static readonly BEATS_PER_BAR = 4; // 每小節的拍數
-    private static readonly SECONDS_PER_MINUTE = 60;
-    private static readonly GRIDS_PER_BEAT = 1; // 每拍幾個格子
+    // 常量定義
+    private static readonly TOP_BAR_HEIGHT = 40;        // 頂部欄高度
+    private static readonly BEATS_PER_BAR = 4;         // 每小節的拍數
+    private static readonly SECONDS_PER_MINUTE = 60;    // 每分鐘的秒數
+    private static readonly GRIDS_PER_BEAT = 1;        // 每拍的網格數
     
-    private timeline: Timeline;
-    private tracks: Map<string, Track> = new Map();
-    private clips: Map<string, Clip> = new Map();
-    private timelineState: ITimeline;
-    private trackContainer: PIXI.Container;
-    private background: PIXI.Graphics;
-    private eventManager: EventManager;
-    private topBar: TopBar;
-    private playhead: Playhead;
-    private isPlaying: boolean = false;
-    private lastTimestamp: number = 0;
-    private animationFrameId: number | null = null;
-    private bpm: number = 60;
+    // 核心組件
+    private timeline: Timeline;                         // 時間軸組件
+    private tracks: Map<string, Track> = new Map();    // 軌道集合
+    private clips: Map<string, Clip> = new Map();      // 片段集合
+    private timelineState: ITimeline;                  // 時間軸狀態
+    private trackContainer: PIXI.Container;            // 軌道容器
+    private background: PIXI.Graphics;                 // 背景圖形
+    private eventManager: EventManager;                // 事件管理器
+    private topBar: TopBar;                           // 頂部控制欄
+    private playhead: Playhead;                       // 播放頭
+    
+    // 播放控制相關
+    private isPlaying: boolean = false;               // 是否正在播放
+    private lastTimestamp: number = 0;                // 上一幀時間戳
+    private animationFrameId: number | null = null;   // 動畫幀 ID
+    private bpm: number = 60;                         // 每分鐘節拍數
 
+    /**
+     * 構造函數
+     * @param app PIXI 應用實例
+     */
     constructor(private app: PIXI.Application) {
         console.log("DAWManager constructor called");  // 檢查點 1
         this.eventManager = EventManager.getInstance();
@@ -79,6 +91,10 @@ export class DAWManager {
         this.setupPlayheadEvents();
     }
 
+    /**
+     * 初始化 DAW 管理器
+     * 設置背景、容器和事件監聽器
+     */
     private init() {
         console.log("DAWManager init");
         
@@ -113,6 +129,10 @@ export class DAWManager {
         });
     }
 
+    /**
+     * 添加新軌道
+     * @param track 軌道數據
+     */
     public addTrack(track: ITrack) {
         console.log("Adding track:", track.id);  // 檢查點 2
         const trackComponent = new Track(track, this.tracks.size);
@@ -121,6 +141,10 @@ export class DAWManager {
         console.log("Track added, container children:", this.trackContainer.children.length);  // 檢查點 3
     }
 
+    /**
+     * 添加新片段到指定軌道
+     * @param clip 片段數據
+     */
     public addClip(clip: IClip) {
         console.log(`DAWManager: Adding clip ${clip.id} to track ${clip.trackId}`);
         
@@ -134,6 +158,11 @@ export class DAWManager {
         this.eventManager.emit('daw:clip:added', { clip });
     }
 
+    /**
+     * 從指定軌道移除片段
+     * @param clipId 片段 ID
+     * @param trackId 軌道 ID
+     */
     public removeClip(clipId: string, trackId: string) {
         const track = this.tracks.get(trackId);
         if (track) {
@@ -150,6 +179,9 @@ export class DAWManager {
         this.timeline.setPosition(position);
     }
 
+    /**
+     * 處理視窗大小變化
+     */
     private handleResize = () => {
         this.background
             .clear()
@@ -168,6 +200,10 @@ export class DAWManager {
         this.playhead.setHeight(this.app.screen.height - TopBar.HEIGHT);
     }
 
+    /**
+     * 銷毀 DAW 管理器
+     * 清理所有資源和事件監聽
+     */
     public destroy() {
         window.removeEventListener('resize', this.handleResize);
         this.timeline.destroy();
@@ -180,6 +216,9 @@ export class DAWManager {
         }
     }
 
+    /**
+     * 設置軌道相關事件監聽
+     */
     private setupTrackEvents() {
         this.eventManager.on('daw:track:dragend', (data: { trackId: string; finalY: number }) => {
             // 計算新的索引位置
@@ -195,6 +234,11 @@ export class DAWManager {
         });
     }
 
+    /**
+     * 重新排序軌道
+     * @param draggedTrackId 被拖動的軌道 ID
+     * @param newIndex 新的位置索引
+     */
     private reorderTracks(draggedTrackId: string, newIndex: number) {
         const tracks = Array.from(this.tracks.entries());
         const oldIndex = tracks.findIndex(([id]) => id === draggedTrackId);
@@ -237,6 +281,9 @@ export class DAWManager {
         });
     }
 
+    /**
+     * 設置播放控制相關事件監聽
+     */
     private setupTransportEvents() {
         this.eventManager.on('daw:transport', (data: { action: 'play' | 'pause' | 'stop' }) => {
             switch (data.action) {
@@ -253,11 +300,19 @@ export class DAWManager {
         });
     }
 
+    /**
+     * 設置播放速度(BPM)
+     * @param bpm 每分鐘節拍數
+     */
     private setBPM(bpm: number) {
         this.bpm = bpm;
         this.topBar.setBPM(bpm);
     }
 
+    /**
+     * 動畫更新函數
+     * 負責更新播放頭位置和時間顯示
+     */
     private animate = () => {
         if (!this.isPlaying) return;
 
@@ -280,12 +335,18 @@ export class DAWManager {
         this.animationFrameId = requestAnimationFrame(this.animate);
     }
 
+    /**
+     * 根據播放頭位置更新時間顯示
+     */
     private updateTimeFromPlayhead() {
         const position = this.playhead.getPosition();
         // 直接使用網格位置作為拍數（因為一個網格就是一拍）
         this.topBar.setBeat(position);
     }
 
+    /**
+     * 開始播放
+     */
     private play() {
         if (this.isPlaying) return;
         
@@ -294,6 +355,9 @@ export class DAWManager {
         this.animate();
     }
 
+    /**
+     * 暫停播放
+     */
     private pause() {
         if (!this.isPlaying) return;
         
@@ -306,6 +370,9 @@ export class DAWManager {
         this.updateTimeFromPlayhead();
     }
 
+    /**
+     * 停止播放並重置播放頭
+     */
     private stop() {
         // 先停止播放狀態
         this.isPlaying = false;
@@ -326,15 +393,23 @@ export class DAWManager {
         this.lastTimestamp = 0;
     }
 
+    /**
+     * 計算每拍的秒數
+     */
     private getSecondsPerBeat(): number {
         return DAWManager.SECONDS_PER_MINUTE / this.bpm;
     }
 
+    /**
+     * 計算每個網格的秒數
+     */
     private getSecondsPerGrid(): number {
         return this.getSecondsPerBeat() / DAWManager.GRIDS_PER_BEAT;
     }
 
-    // 當 Playhead 被手動拖動時也要更新時間
+    /**
+     * 設置播放頭事件監聽
+     */
     private setupPlayheadEvents() {
         this.eventManager.on('playhead:move', () => {
             this.updateTimeFromPlayhead();
