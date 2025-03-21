@@ -8,6 +8,7 @@ import { TopBar } from "./components/TopBar";
 import { Playhead } from "./components/Playhead";
 import { DAWConfig } from "../../config/DAWConfig";
 import { TrackList } from "../daw/track/TrackList";
+import { ContextMenu } from "./context/ContextMenu";
 
 /**
  * DAW 管理器類
@@ -30,12 +31,14 @@ export class DAWManager {
     private topBar: TopBar;                           // 頂部控制欄
     private playhead: Playhead;                       // 播放頭
     private trackList: TrackList;
+    private contextMenu: ContextMenu;
     
     // 播放控制相關
     private isPlaying: boolean = false;               // 是否正在播放
     private lastTimestamp: number = 0;                // 上一幀時間戳
     private animationFrameId: number | null = null;   // 動畫幀 ID
     private bpm: number = 60;                         // 每分鐘節拍數
+    private clipboardData: IClip | null = null;        // 剪貼板數據
 
     /**
      * 構造函數
@@ -90,11 +93,16 @@ export class DAWManager {
         this.trackList = new TrackList(this.app);
         this.trackContainer.addChild(this.trackList.getContainer());
         
+        // 初始化右鍵選單
+        this.contextMenu = new ContextMenu();
+        this.app.stage.addChild(this.contextMenu.getContainer());
+        
         // 初始化
         this.init();
         this.setupTrackEvents();
         this.setupTransportEvents();
         this.setupPlayheadEvents();
+        this.setupContextMenuEvents();
     }
 
     /**
@@ -368,5 +376,192 @@ export class DAWManager {
         this.eventManager.on('playhead:move', () => {
             this.updateTimeFromPlayhead();
         });
+    }
+
+    private setupContextMenuEvents(): void {
+        // 點擊任何地方都會觸發這個事件
+        this.app.stage.eventMode = 'static';
+        this.app.stage.hitArea = this.app.screen;
+        
+        // 使用 pointerdown 而不是 click，這樣可以捕獲所有點擊
+        this.app.stage.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
+            // 如果是右鍵點擊，不要隱藏選單
+            if (event.button === 2) return;
+            
+            // 隱藏選單
+            this.contextMenu.hide();
+        });
+
+        // 監聽軌道右鍵事件
+        this.eventManager.on('track:contextmenu', (data) => {
+            // 先隱藏之前的選單（如果有的話）
+            this.contextMenu.hide();
+            
+            const track = this.trackList.getTrack(data.trackId);
+            if (!track) return;
+
+            // 顯示新的選單
+            this.contextMenu.show([
+                {
+                    label: '重命名',
+                    action: () => this.renameTrack(data.trackId),
+                    shortcut: 'F2'
+                },
+                {
+                    label: '刪除',
+                    action: () => this.deleteTrack(data.trackId),
+                    shortcut: 'Del'
+                },
+                {
+                    label: '複製',
+                    action: () => this.duplicateTrack(data.trackId),
+                    shortcut: 'Ctrl+D'
+                },
+                {
+                    label: '靜音',
+                    action: () => this.muteTrack(data.trackId),
+                    shortcut: 'M'
+                }
+            ], data.x, data.y);
+            
+            // 阻止事件冒泡
+            event.stopPropagation();
+        });
+
+        // 監聽片段右鍵事件，同樣的處理方式
+        this.eventManager.on('clip:contextmenu', (data) => {
+            this.contextMenu.hide();
+            
+            this.contextMenu.show([
+                {
+                    label: '剪切',
+                    action: () => this.cutClip(data.clipId),
+                    shortcut: 'Ctrl+X'
+                },
+                {
+                    label: '複製',
+                    action: () => this.copyClip(data.clipId),
+                    shortcut: 'Ctrl+C'
+                },
+                {
+                    label: '刪除',
+                    action: () => this.deleteClip(data.clipId),
+                    shortcut: 'Del'
+                },
+                {
+                    label: '分割',
+                    action: () => this.splitClip(data.clipId),
+                    shortcut: 'S'
+                }
+            ], data.x, data.y);
+            
+            // 阻止事件冒泡
+            event.stopPropagation();
+        });
+    }
+
+    // 實現右鍵選單的操作方法
+    private renameTrack(trackId: string): void {
+        // TODO: 實現重命名邏輯
+        console.log('Rename track:', trackId);
+    }
+
+    private deleteTrack(trackId: string): void {
+        const track = this.trackList.getTrack(trackId);
+        if (track) {
+            this.trackList.removeTrack(trackId);
+            this.eventManager.emit('track:removed', { trackId });
+        }
+    }
+
+    private duplicateTrack(trackId: string): void {
+        const track = this.trackList.getTrack(trackId);
+        if (track) {
+            // TODO: 實現複製軌道邏輯
+            console.log('Duplicate track:', trackId);
+        }
+    }
+
+    private muteTrack(trackId: string): void {
+        const track = this.trackList.getTrack(trackId);
+        if (track) {
+            // TODO: 實現靜音邏輯
+            console.log('Mute track:', trackId);
+        }
+    }
+
+    private cutClip(clipId: string): void {
+        // 獲取片段數據
+        const clip = this.findClip(clipId);
+        if (!clip) return;
+
+        // 將片段數據存儲到剪貼板
+        this.clipboardData = { ...clip };
+        
+        // 刪除原片段
+        this.deleteClip(clipId);
+    }
+
+    private copyClip(clipId: string): void {
+        // 獲取片段數據
+        const clip = this.findClip(clipId);
+        if (!clip) return;
+
+        // 將片段數據存儲到剪貼板
+        this.clipboardData = { ...clip };
+    }
+
+    private deleteClip(clipId: string): void {
+        // 遍歷所有軌道尋找並刪除片段
+        for (const track of this.trackList.getTracks()) {
+            track.removeClip(clipId);
+        }
+        this.eventManager.emit('clip:removed', { clipId });
+    }
+
+    private splitClip(clipId: string): void {
+        // 獲取片段數據
+        const clip = this.findClip(clipId);
+        if (!clip) return;
+
+        // 在當前播放頭位置分割片段
+        const playheadPosition = this.playhead.getPosition();
+        const clipStartTime = clip.startTime;
+        const clipDuration = clip.duration;
+
+        if (playheadPosition > clipStartTime && 
+            playheadPosition < clipStartTime + clipDuration) {
+            
+            // 創建兩個新片段
+            const leftClip: IClip = {
+                ...clip,
+                id: `${clip.id}_left`,
+                duration: playheadPosition - clipStartTime
+            };
+
+            const rightClip: IClip = {
+                ...clip,
+                id: `${clip.id}_right`,
+                startTime: playheadPosition,
+                duration: clipDuration - (playheadPosition - clipStartTime)
+            };
+
+            // 刪除原片段
+            this.deleteClip(clipId);
+
+            // 添加新片段
+            this.addClip(leftClip);
+            this.addClip(rightClip);
+        }
+    }
+
+    private findClip(clipId: string): IClip | null {
+        for (const track of this.trackList.getTracks()) {
+            const clip = track.getClip(clipId);
+            if (clip) {
+                return clip.getData();
+            }
+        }
+        return null;
     }
 }

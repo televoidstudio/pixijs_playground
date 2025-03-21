@@ -71,6 +71,19 @@ export class TrackContent extends BaseComponent {
             .stroke();
     }
 
+    private setupClipEvents(clip: Clip): void {
+        const container = clip.getContainer();
+        container.eventMode = 'static';
+        container.on('rightclick', (event: PIXI.FederatedPointerEvent) => {
+            event.stopPropagation();
+            this.eventManager.emit('clip:contextmenu', {
+                clipId: clip.getId(),
+                x: event.global.x,
+                y: event.global.y
+            });
+        });
+    }
+
     /**
      * 添加片段
      */
@@ -81,6 +94,9 @@ export class TrackContent extends BaseComponent {
         
         // 設置片段位置
         clipComponent.getContainer().position.x = clip.startTime * this.gridSize;
+        
+        // 設置右鍵選單事件
+        this.setupClipEvents(clipComponent);
     }
 
     /**
@@ -93,6 +109,10 @@ export class TrackContent extends BaseComponent {
             clip.destroy();
             this.clips.delete(clipId);
         }
+    }
+
+    public getClip(clipId: string): Clip | undefined {
+        return this.clips.get(clipId);
     }
 
     public update() {

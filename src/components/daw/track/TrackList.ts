@@ -126,4 +126,15 @@ export class TrackList extends BaseComponent {
         this.trackOrder = [];
         super.destroy();
     }
+
+    public removeTrack(trackId: string): void {
+        const track = this.tracks.get(trackId);
+        if (!track) return;
+
+        track.destroy();
+        this.tracks.delete(trackId);
+        
+        // 更新其他軌道的位置
+        this.updateTrackPositions();
+    }
 } 

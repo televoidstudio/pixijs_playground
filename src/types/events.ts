@@ -23,6 +23,16 @@ export interface DAWEventPayload {
     'clip:moved': { clip: IClip };
     'clip:resized': { clip: IClip };
     'clip:removed': { clipId: string };
+
+    // 右鍵選單事件
+    'track:contextmenu': { trackId: string; x: number; y: number };
+    'clip:contextmenu': { clipId: string; x: number; y: number };
+    
+    // Clip 操作事件
+    'clip:cut': { clipId: string };
+    'clip:copy': { clipId: string };
+    'clip:delete': { clipId: string };
+    'clip:split': { clipId: string };
 }
 
 export type DAWEventType = keyof DAWEventPayload;

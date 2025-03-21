@@ -79,6 +79,17 @@ export class Track extends BaseComponent {
                 this.onDragEnd();
             }
         });
+
+        // 添加右鍵選單事件
+        this.container.eventMode = 'static';
+        this.container.on('rightclick', (event: PIXI.FederatedPointerEvent) => {
+            event.stopPropagation();
+            this.eventManager.emit('track:contextmenu', {
+                trackId: this.track.id,
+                x: event.global.x,
+                y: event.global.y
+            });
+        });
     }
 
     private onDragStart(y: number) {

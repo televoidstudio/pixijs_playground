@@ -60,6 +60,17 @@ export class Clip extends BaseComponent {
         
         // 設置事件
         this.setupEvents();
+
+        // 添加右鍵選單事件
+        this.container.eventMode = 'static';
+        this.container.on('rightclick', (event: PIXI.FederatedPointerEvent) => {
+            event.stopPropagation();
+            this.eventManager.emit('clip:contextmenu', {
+                clipId: this.clipData.id,
+                x: event.global.x,
+                y: event.global.y
+            });
+        });
     }
 
     private drawBackground() {
@@ -230,5 +241,10 @@ export class Clip extends BaseComponent {
     public destroy() {
         this.container.removeAllListeners();
         this.container.destroy({ children: true });
+    }
+
+    // 獲取片段ID的方法
+    public getId(): string {
+        return this.clipData.id;
     }
 } 
