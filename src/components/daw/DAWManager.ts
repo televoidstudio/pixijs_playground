@@ -222,35 +222,16 @@ export class DAWManager {
      * 設置軌道相關事件監聽
      */
     private setupTrackEvents() {
-        this.eventManager.on('daw:track:dragend', (data: { trackId: string; finalY: number }) => {
-            const newIndex = Math.floor(
-                (data.finalY - DAWConfig.dimensions.topBarHeight) / 
-                DAWConfig.dimensions.trackHeight
-            );
-            this.reorderTracks(data.trackId, newIndex);
+        // 只處理高層級的業務邏輯
+        this.eventManager.on('daw:track:reorder', ({ trackId, newIndex }) => {
+            this.trackList.moveTrack(trackId, newIndex);
         });
 
-        this.eventManager.on('track:rename', (data: { trackId: string; name: string }) => {
-            const track = this.trackList.getTrack(data.trackId);
+        this.eventManager.on('track:rename', ({ trackId, name }) => {
+            const track = this.trackList.getTrack(trackId);
             if (track) {
-                track.setName(data.name);
+                track.setName(name);
             }
-        });
-    }
-
-    /**
-     * 重新排序軌道
-     * @param draggedTrackId 被拖動的軌道 ID
-     * @param newIndex 新的位置索引
-     */
-    private reorderTracks(draggedTrackId: string, newIndex: number) {
-        // 使用 TrackList 的 moveTrack 方法
-        this.trackList.moveTrack(draggedTrackId, newIndex);
-        
-        // 發送重新排序事件
-        this.eventManager.emit('daw:track:reordered', { 
-            trackId: draggedTrackId,
-            newIndex: newIndex
         });
     }
 

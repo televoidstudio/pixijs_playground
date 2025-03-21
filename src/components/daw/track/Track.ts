@@ -62,57 +62,44 @@ export class Track extends BaseComponent {
     }
 
     private setupControlEvents() {
-        this.eventManager.on('track:dragstart', (data: { trackId: string; y: number }) => {
+        this.eventManager.on('track:dragstart', (data) => {
             if (data.trackId === this.track.id) {
-                this.container.alpha = 0.8;
-                this.dragStartY = data.y;
-                this.initialY = this.getY();
-                
-                this.eventManager.emit('daw:track:dragstart', {
-                    trackId: this.track.id,
-                    index: this.index
-                });
+                this.onDragStart(data.y);
             }
         });
 
-        this.eventManager.on('track:drag', (data: { trackId: string; y: number }) => {
+        this.eventManager.on('track:drag', (data) => {
             if (data.trackId === this.track.id) {
-                const deltaY = data.y - this.dragStartY;
-                const newY = Math.max(
-                    DAWConfig.dimensions.topBarHeight, 
-                    this.initialY + deltaY
-                );
-                
-                this.setY(newY);
-                
-                const targetIndex = Math.floor(
-                    (newY - DAWConfig.dimensions.topBarHeight) / 
-                    DAWConfig.dimensions.trackHeight
-                );
-                
-                if (targetIndex !== this.index) {
-                    this.eventManager.emit('daw:track:preview', {
-                        fromId: this.track.id,
-                        fromIndex: this.index,
-                        toIndex: targetIndex
-                    });
-                }
+                this.onDrag(data.y);
             }
         });
 
-        this.eventManager.on('track:dragend', (data: { trackId: string; y: number }) => {
+        this.eventManager.on('track:dragend', (data) => {
             if (data.trackId === this.track.id) {
-                this.container.alpha = 1;
-                
-                this.eventManager.emit('daw:track:dragend', {
-                    trackId: this.track.id,
-                    finalY: this.getY()
-                });
-                
-                this.dragStartY = 0;
-                this.initialY = 0;
+                this.onDragEnd();
             }
         });
+    }
+
+    private onDragStart(y: number) {
+        this.container.alpha = 0.8;
+        this.dragStartY = y;
+        this.initialY = this.getY();
+    }
+
+    private onDrag(y: number) {
+        const deltaY = y - this.dragStartY;
+        const newY = Math.max(
+            DAWConfig.dimensions.topBarHeight, 
+            this.initialY + deltaY
+        );
+        this.setY(newY);
+    }
+
+    private onDragEnd() {
+        this.container.alpha = 1;
+        this.dragStartY = 0;
+        this.initialY = 0;
     }
 
     public setName(name: string): void {

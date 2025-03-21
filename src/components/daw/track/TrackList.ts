@@ -3,9 +3,11 @@ import { BaseComponent } from "../core/BaseComponent";
 import { Track } from "./Track";
 import { ITrack } from "../../../types/daw";
 import { DAWConfig } from "../../../config/DAWConfig";
+import { DAWEventPayload } from "../../../types/events";
 
 export class TrackList extends BaseComponent {
     private tracks: Map<string, Track> = new Map();
+    private trackOrder: string[] = [];
 
     constructor(private app: PIXI.Application) {
         super();
@@ -13,58 +15,101 @@ export class TrackList extends BaseComponent {
     }
 
     private init() {
-        // 初始化容器
         this.container.sortableChildren = true;
+        this.setupEvents();
+    }
+
+    private setupEvents() {
+        // 監聽拖動相關事件
+        this.eventManager.on('track:drag', (data) => this.handleTrackDrag(data));
+        this.eventManager.on('track:dragend', (data) => this.handleTrackDragEnd(data));
+    }
+
+    private handleTrackDrag({ trackId, y }: DAWEventPayload['track:drag']) {
+        const track = this.tracks.get(trackId);
+        if (!track) return;
+
+        const currentIndex = this.trackOrder.indexOf(trackId);
+        const targetIndex = this.calculateTargetIndex(y);
+
+        if (targetIndex !== currentIndex) {
+            this.eventManager.emit('daw:track:preview', {
+                trackId,
+                currentIndex,
+                targetIndex
+            });
+        }
+    }
+
+    private handleTrackDragEnd({ trackId, y }: DAWEventPayload['track:dragend']) {
+        const targetIndex = this.calculateTargetIndex(y);
+        this.moveTrack(trackId, targetIndex);
+    }
+
+    private calculateTargetIndex(y: number): number {
+        return Math.max(0, Math.floor(
+            (y - DAWConfig.dimensions.topBarHeight) / 
+            DAWConfig.dimensions.trackHeight
+        ));
     }
 
     public addTrack(trackData: ITrack): void {
-        const track = new Track(
-            trackData,
-            this.tracks.size,
-            DAWConfig.dimensions.gridSize
-        );
-        
-        this.tracks.set(trackData.id, track);
-        this.container.addChild(track.getContainer());
-        
-        this.eventManager.emit('daw:track:added', { track: trackData });
+        try {
+            const track = new Track(
+                trackData,
+                this.tracks.size,
+                DAWConfig.dimensions.gridSize
+            );
+            
+            this.tracks.set(trackData.id, track);
+            this.trackOrder.push(trackData.id);
+            this.container.addChild(track.getContainer());
+            
+            this.updateTrackPositions();
+            this.eventManager.emit('track:added', { track: trackData });
+        } catch (error) {
+            console.error('Failed to add track:', error);
+            throw new Error(`Failed to add track ${trackData.id}`);
+        }
     }
 
     public moveTrack(id: string, newIndex: number): void {
         const track = this.tracks.get(id);
-        if (!track) return;
+        if (!track) {
+            console.warn(`Track ${id} not found`);
+            return;
+        }
 
-        const tracks = Array.from(this.tracks.entries());
-        const oldIndex = tracks.findIndex(([trackId]) => trackId === id);
-        
+        const oldIndex = this.trackOrder.indexOf(id);
         if (oldIndex === -1) return;
-        
-        const clampedNewIndex = Math.max(0, Math.min(newIndex, tracks.length - 1));
-        if (clampedNewIndex === oldIndex) return;
-        
-        const trackOrder = tracks.map(([trackId]) => trackId);
-        trackOrder.splice(oldIndex, 1);
-        trackOrder.splice(clampedNewIndex, 0, id);
 
-        // 更新所有軌道的位置
-        trackOrder.forEach((trackId, index) => {
-            const track = this.tracks.get(trackId);
+        const clampedNewIndex = Math.max(0, 
+            Math.min(newIndex, this.trackOrder.length - 1)
+        );
+        
+        if (clampedNewIndex === oldIndex) return;
+
+        // 更新軌道順序
+        this.trackOrder.splice(oldIndex, 1);
+        this.trackOrder.splice(clampedNewIndex, 0, id);
+
+        this.updateTrackPositions();
+        
+        this.eventManager.emit('daw:track:reorder', {
+            trackId: id,
+            newIndex: clampedNewIndex
+        });
+    }
+
+    private updateTrackPositions(): void {
+        this.trackOrder.forEach((id, index) => {
+            const track = this.tracks.get(id);
             if (track) {
                 const targetY = DAWConfig.dimensions.topBarHeight + 
                               (index * DAWConfig.dimensions.trackHeight);
                 track.setY(targetY);
             }
         });
-
-        // 更新內部數據結構
-        const newTracks = new Map<string, Track>();
-        trackOrder.forEach(trackId => {
-            const track = this.tracks.get(trackId);
-            if (track) {
-                newTracks.set(trackId, track);
-            }
-        });
-        this.tracks = newTracks;
     }
 
     public getTrack(id: string): Track | undefined {
@@ -78,6 +123,7 @@ export class TrackList extends BaseComponent {
     public override destroy(): void {
         this.tracks.forEach(track => track.destroy());
         this.tracks.clear();
-        this.container.destroy();
+        this.trackOrder = [];
+        super.destroy();
     }
 } 
