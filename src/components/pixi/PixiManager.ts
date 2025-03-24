@@ -31,7 +31,7 @@ export class PixiManager {
             this.container.appendChild(this.app.canvas);
         }
 
-        this.eventManager.emit('pixi:initialized');
+        this.eventManager.emit('pixi:initialized', undefined);
         console.log("✅ Pixi App Initialized");
     }
 
@@ -54,6 +54,6 @@ export class PixiManager {
         console.log("🧹 銷毀 Pixi.js 應用");
         this.app.destroy(true);
         this.app = null;
-        this.eventManager.emit('pixi:destroyed');
+        this.eventManager.emit('pixi:destroyed', undefined);
     }
 } 

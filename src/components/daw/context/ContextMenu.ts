@@ -139,4 +139,13 @@ export class ContextMenu extends BaseComponent {
             this.itemContainer.addChild(itemContainer);
         });
     }
+
+    public update(): void {
+        this.drawMenu();
+    }
+
+    public destroy(): void {
+        this.container.removeAllListeners();
+        this.container.destroy({ children: true });
+    }
 } 

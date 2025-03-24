@@ -51,12 +51,12 @@ export class TrackControls extends BaseComponent {
             .fill({ color: 0x444444 })
             .rect(0, 0, TrackControls.HANDLE_WIDTH, TrackControls.HEIGHT);
             
-        // 繪製把手圖示
+        // 繪製把手圖示（三條線）
         this.dragHandle
             .fill({ color: 0x666666 })
-            .rect(8, 30, 14, 2)
-            .rect(8, 35, 14, 2)
-            .rect(8, 40, 14, 2);
+            .rect(8, 32, 14, 2)
+            .rect(8, 37, 14, 2)
+            .rect(8, 42, 14, 2);
 
         // 設置把手互動屬性
         this.dragHandle.eventMode = 'static';
@@ -64,8 +64,28 @@ export class TrackControls extends BaseComponent {
         
         // 添加懸停效果
         this.dragHandle
-            .on('pointerover', () => this.dragHandle.tint = 0x666666)
-            .on('pointerout', () => this.dragHandle.tint = 0xFFFFFF);
+            .on('pointerover', () => {
+                if (!this.isDragging) {
+                    this.dragHandle.tint = 0x666666;
+                    // 添加視覺提示
+                    this.dragHandle
+                        .fill({ color: 0x888888 })
+                        .rect(8, 32, 14, 2)
+                        .rect(8, 37, 14, 2)
+                        .rect(8, 42, 14, 2);
+                }
+            })
+            .on('pointerout', () => {
+                if (!this.isDragging) {
+                    this.dragHandle.tint = 0xFFFFFF;
+                    // 恢復原始外觀
+                    this.dragHandle
+                        .fill({ color: 0x666666 })
+                        .rect(8, 32, 14, 2)
+                        .rect(8, 37, 14, 2)
+                        .rect(8, 42, 14, 2);
+                }
+            });
 
         this.container.addChild(this.dragHandle);
     }
@@ -74,11 +94,15 @@ export class TrackControls extends BaseComponent {
         this.nameText = new PIXI.Text({
             text: this.track.name,
             style: {
-                fontSize: 14,
+                fontSize: 14 * (window.devicePixelRatio || 1),
                 fill: 0xffffff,
-                fontFamily: 'Arial'
+                fontFamily: 'Arial',
+                align: 'left'
             }
         });
+
+        // 調整位置，考慮縮放因素
+        this.nameText.scale.set(1 / (window.devicePixelRatio || 1));
         this.nameText.position.set(40, 30);
         this.nameText.eventMode = 'static';
         this.nameText.cursor = 'pointer';
@@ -93,10 +117,76 @@ export class TrackControls extends BaseComponent {
         this.dragHandle.eventMode = 'static';
         this.dragHandle.cursor = 'grab';
 
-        this.dragHandle.on('pointerdown', this.onDragStart.bind(this));
-        this.dragHandle.on('globalpointermove', this.onDragMove.bind(this));
-        this.dragHandle.on('pointerup', this.onDragEnd.bind(this));
-        this.dragHandle.on('pointerupoutside', this.onDragEnd.bind(this));
+        let lastEmitTime = 0;
+        const throttleInterval = 16; // 約60fps
+        let lastY = 0;  // 記錄最後的 Y 位置
+
+        const handleDragMove = (event: PointerEvent) => {
+            if (!this.isDragging) return;
+            
+            const currentTime = performance.now();
+            if (currentTime - lastEmitTime >= throttleInterval) {
+                // 使用 clientY 替代 global.y
+                const y = event.clientY;
+                lastY = y;
+                
+                this.eventManager.emit('track:drag', {
+                    trackId: this.track.id,
+                    y: y
+                });
+                lastEmitTime = currentTime;
+            }
+        };
+
+        const handleDragEnd = () => {
+            if (!this.isDragging) return;
+            
+            this.isDragging = false;
+            this.dragHandle.cursor = 'grab';
+            
+            // 恢復原始外觀
+            this.dragHandle.tint = 0xFFFFFF;
+            this.dragHandle
+                .fill({ color: 0x666666 })
+                .rect(8, 32, 14, 2)
+                .rect(8, 37, 14, 2)
+                .rect(8, 42, 14, 2);
+            
+            // 移除全局事件監聽
+            window.removeEventListener('pointermove', handleDragMove);
+            window.removeEventListener('pointerup', handleDragEnd);
+            
+            this.eventManager.emit('track:dragend', {
+                trackId: this.track.id,
+                y: lastY  // 使用最後記錄的 Y 位置
+            });
+        };
+        
+        this.dragHandle.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
+            this.isDragging = true;
+            this.dragStartY = event.global.y;
+            this.originalY = this.container.parent.y;
+            lastY = event.global.y;  // 初始化最後的 Y 位置
+            
+            this.dragHandle.cursor = 'grabbing';
+            
+            // 改變拖動時的外觀
+            this.dragHandle.tint = 0x888888;
+            this.dragHandle
+                .fill({ color: 0x888888 })
+                .rect(8, 32, 14, 2)
+                .rect(8, 37, 14, 2)
+                .rect(8, 42, 14, 2);
+            
+            // 添加全局事件監聽
+            window.addEventListener('pointermove', handleDragMove);
+            window.addEventListener('pointerup', handleDragEnd);
+            
+            this.eventManager.emit('track:dragstart', { 
+                trackId: this.track.id,
+                y: event.global.y
+            });
+        });
     }
 
     private onDragStart(event: PIXI.FederatedPointerEvent) {
@@ -107,15 +197,6 @@ export class TrackControls extends BaseComponent {
         this.dragHandle.cursor = 'grabbing';
         
         this.eventManager.emit('track:dragstart', { 
-            trackId: this.track.id,
-            y: event.global.y
-        });
-    }
-
-    private onDragMove(event: PIXI.FederatedPointerEvent) {
-        if (!this.isDragging) return;
-
-        this.eventManager.emit('track:drag', {
             trackId: this.track.id,
             y: event.global.y
         });
@@ -198,7 +279,20 @@ export class TrackControls extends BaseComponent {
      */
     public updateName(name: string): void {
         if (this.nameText) {
+            this.track.name = name;
             this.nameText.text = name;
+            this.nameText.style.fontSize = 14 * (window.devicePixelRatio || 1);
+            this.nameText.scale.set(1 / (window.devicePixelRatio || 1));
         }
+    }
+
+    public update(): void {
+        // 更新文字的縮放
+        if (this.nameText) {
+            this.nameText.style.fontSize = 14 * (window.devicePixelRatio || 1);
+            this.nameText.scale.set(1 / (window.devicePixelRatio || 1));
+        }
+        this.createBackground();
+        this.createDragHandle();
     }
 } 

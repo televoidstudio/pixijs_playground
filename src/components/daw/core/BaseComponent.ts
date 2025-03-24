@@ -49,4 +49,12 @@ export abstract class BaseComponent {
      * 子類必須實現此方法以正確清理資源
      */
     public abstract destroy(): void;
+
+    public setPosition(x: number, y: number): void {
+        this.container.position.set(x, y);
+    }
+
+    public setZIndex(index: number): void {
+        this.container.zIndex = index;
+    }
 } 

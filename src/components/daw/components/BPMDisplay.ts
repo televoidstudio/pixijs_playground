@@ -51,7 +51,7 @@ export class BPMDisplay extends BaseComponent {
 
     private onClick() {
         // 發出事件通知需要更改 BPM
-        this.eventManager.emit('daw:bpm:click', { currentBPM: this.currentBPM });
+        this.eventManager.emit('daw:bpm:change', { bpm: this.currentBPM });
     }
 
     public setBPM(bpm: number) {
@@ -65,5 +65,9 @@ export class BPMDisplay extends BaseComponent {
 
     public destroy() {
         this.container.destroy({ children: true });
+    }
+
+    public update(): void {
+        this.drawBackground();
     }
 } 

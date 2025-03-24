@@ -3,7 +3,7 @@ import { DAWConstants } from '../../config/constants';
 
 export class Button extends PIXI.Container {
     private background: PIXI.Graphics;
-    private label: PIXI.Text;
+    private labelText: PIXI.Text;
 
     constructor(text: string, options: {
         width?: number;
@@ -24,7 +24,7 @@ export class Button extends PIXI.Container {
             .fill({ color: backgroundColor })
             .roundRect(0, 0, width, height, 4);
 
-        this.label = new PIXI.Text({
+        this.labelText = new PIXI.Text({
             text,
             style: {
                 fill: textColor,
@@ -33,10 +33,10 @@ export class Button extends PIXI.Container {
             }
         });
 
-        this.label.anchor.set(0.5);
-        this.label.position.set(width / 2, height / 2);
+        this.labelText.anchor.set(0.5);
+        this.labelText.position.set(width / 2, height / 2);
 
-        this.addChild(this.background, this.label);
+        this.addChild(this.background, this.labelText);
         
         this.eventMode = 'static';
         this.cursor = 'pointer';

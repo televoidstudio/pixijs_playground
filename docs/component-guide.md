@@ -111,68 +111,68 @@ public destroy(): void {
    - 使用私有方法處理內部邏輯
    - 提供公共方法作為 API
 
-```typescript
-export class TrackComponent extends BaseComponent {
-    private background: PIXI.Graphics;
-    private controls: PIXI.Container;
+    ```typescript
+    export class TrackComponent extends BaseComponent {
+        private background: PIXI.Graphics;
+        private controls: PIXI.Container;
 
-    public setVolume(value: number): void {
-        // 公共 API
-    }
+        public setVolume(value: number): void {
+            // 公共 API
+        }
 
-    private updateBackground(): void {
-        // 私有實現
+        private updateBackground(): void {
+            // 私有實現
+        }
     }
-}
-```
+    ```
 
 2. **事件處理**
    - 使用明確的事件名稱
    - 在 `destroy` 方法中清理所有事件監聽
    - 使用類型定義確保事件數據的正確性
 
-```typescript
-interface MyEventPayload {
-    'component:action': { id: string; value: number };
-}
+    ```typescript
+    interface MyEventPayload {
+        'component:action': { id: string; value: number };
+    }
 
-private setupEvents(): void {
-    this.eventManager.on('component:action', (data) => {
-        // 處理事件
-    });
-}
-```
+    private setupEvents(): void {
+        this.eventManager.on('component:action', (data) => {
+            // 處理事件
+        });
+    }
+    ```
 
 3. **錯誤處理**
    - 在關鍵操作中使用錯誤處理
    - 提供有意義的錯誤信息
 
-```typescript
-public someOperation(): void {
-    try {
-        // 執行操作
-    } catch (error) {
-        console.error('Operation failed:', error);
-        this.eventManager.emit('component:error', { 
-            error: error.message 
-        });
+    ```typescript
+    public someOperation(): void {
+        try {
+            // 執行操作
+        } catch (error) {
+            console.error('Operation failed:', error);
+            this.eventManager.emit('component:error', { 
+                error: error.message 
+            });
+        }
     }
-}
-```
+    ```
 
 4. **性能考慮**
    - 避免在 `update` 方法中進行昂貴的操作
    - 適當使用 PIXI.js 的緩存功能
    - 及時清理不需要的資源
 
-```typescript
-private cacheGraphics(): void {
-    const cacheId = 'my-cache';
-    if (!PIXI.utils.TextureCache[cacheId]) {
-        // 創建並緩存紋理
+    ```typescript
+    private cacheGraphics(): void {
+        const cacheId = 'my-cache';
+        if (!PIXI.utils.TextureCache[cacheId]) {
+            // 創建並緩存紋理
+        }
     }
-}
-```
+    ```
 
 ## 示例
 
@@ -250,4 +250,4 @@ export class MyDAWComponent extends BaseComponent {
 2. 適當使用 TypeScript 類型
 3. 保持組件職責單一
 4. 正確處理事件監聽的清理
-5. 考慮組件的可重用性 
+5. 考慮組件的可重用性

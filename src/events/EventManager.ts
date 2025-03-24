@@ -1,3 +1,5 @@
+import { DAWEventMap } from '../types/events';
+
 export class EventManager {
     private static instance: EventManager;
     private listeners: Map<string, Set<Function>>;

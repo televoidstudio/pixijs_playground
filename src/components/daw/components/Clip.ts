@@ -90,7 +90,7 @@ export class Clip extends BaseComponent {
         this.container.eventMode = 'static';
         this.container.on('rightclick', (event: PIXI.FederatedPointerEvent) => {
             event.stopPropagation();
-            this.eventManager.emit('clip:contextmenu', {
+            this.eventManager.emit('daw:clip:contextmenu', {
                 clipId: this.clipData.id,
                 x: event.global.x,
                 y: event.global.y
@@ -300,5 +300,9 @@ export class Clip extends BaseComponent {
      */
     public getId(): string {
         return this.clipData.id;
+    }
+
+    public getData(): IClip {
+        return { ...this.clipData };
     }
 } 

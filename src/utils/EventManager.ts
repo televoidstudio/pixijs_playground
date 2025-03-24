@@ -1,8 +1,8 @@
 // Define event payload types
-import { DAWEventPayload } from '../types/daw';
+import { DAWEventPayload } from '../types/events';
 import { IClip } from '../types/clip';
 
-export interface EventPayload extends DAWEventPayload {
+export type EventPayload = DAWEventPayload & {
     'window:destroyed': { id: string };
     'window:added': { id: string };
     'window:removed': { id: string };
@@ -16,7 +16,7 @@ export interface EventPayload extends DAWEventPayload {
     'daw:clip:moved': { clip: IClip };
     'daw:clip:resized': { clip: IClip };
     'daw:clip:removed': { clipId: string };
-}
+};
 
 // Improve type safety for event callbacks
 export type EventCallback<K extends keyof EventPayload> = (data: EventPayload[K]) => void;
@@ -45,6 +45,7 @@ export class EventManager {
         }
         this.events.get(event)?.add(callback);
     }
+
     // Unsubscribe from an event
     public off<K extends keyof EventPayload>(event: K, callback: EventCallback<K>): void {
         this.events.get(event)?.delete(callback);

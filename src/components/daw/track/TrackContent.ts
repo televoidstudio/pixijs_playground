@@ -16,6 +16,11 @@ export class TrackContent extends BaseComponent {
     }
 
     private init() {
+        this.container.eventMode = 'static';
+        this.container.interactiveChildren = true;
+        this.container.visible = true;
+        this.container.sortableChildren = true;
+
         this.background = new PIXI.Graphics();
         this.drawBackground();
         this.container.addChild(this.background);
@@ -24,40 +29,13 @@ export class TrackContent extends BaseComponent {
     private drawBackground() {
         this.background.clear();
         
-        // 計算內容區域的寬度
-        const contentWidth = window.innerWidth * 2;
+        // 計算內容區域的寬度（確保足夠寬）
+        const contentWidth = Math.max(window.innerWidth * 2, 3000);
         
         // 繪製內容區域背景
         this.background
             .fill({ color: 0x2a2a2a })
             .rect(0, 0, contentWidth, TrackContent.TRACK_HEIGHT);
-
-        // 繪製垂直網格線
-        for (let x = 0; x <= contentWidth; x += this.gridSize) {
-            // 主要拍子線（每4拍）
-            if ((x / this.gridSize) % 4 === 0) {
-                this.background
-                    .setStrokeStyle({
-                        width: 1,
-                        color: 0x444444,
-                        alpha: 0.8
-                    })
-                    .moveTo(x, 0)
-                    .lineTo(x, TrackContent.TRACK_HEIGHT)
-                    .stroke();
-            } else {
-                // 子拍子線
-                this.background
-                    .setStrokeStyle({
-                        width: 1,
-                        color: 0x333333,
-                        alpha: 0.5
-                    })
-                    .moveTo(x, 0)
-                    .lineTo(x, TrackContent.TRACK_HEIGHT)
-                    .stroke();
-            }
-        }
 
         // 添加軌道底部分界線
         this.background
@@ -76,7 +54,7 @@ export class TrackContent extends BaseComponent {
         container.eventMode = 'static';
         container.on('rightclick', (event: PIXI.FederatedPointerEvent) => {
             event.stopPropagation();
-            this.eventManager.emit('clip:contextmenu', {
+            this.eventManager.emit('daw:clip:contextmenu', {
                 clipId: clip.getId(),
                 x: event.global.x,
                 y: event.global.y
@@ -111,8 +89,9 @@ export class TrackContent extends BaseComponent {
         }
     }
 
-    public getClip(clipId: string): Clip | undefined {
-        return this.clips.get(clipId);
+    public getClip(clipId: string): IClip | null {
+        const clip = this.clips.get(clipId);
+        return clip ? clip.getData() : null;
     }
 
     public update() {

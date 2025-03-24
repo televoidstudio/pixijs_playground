@@ -1,7 +1,11 @@
-import { IClip } from './clip';
-import { ITrack } from './track';
+import { IClip, ITrack } from './daw';
 
 export interface DAWEventPayload {
+    // Pixi 相關事件
+    'pixi:initialized': void;
+    'pixi:resized': { width: number; height: number };
+    'pixi:destroyed': void;
+
     // Track 基礎事件
     'track:dragstart': { trackId: string; y: number };
     'track:drag': { trackId: string; y: number };
@@ -17,18 +21,22 @@ export interface DAWEventPayload {
     'daw:transport': { action: 'play' | 'pause' | 'stop' };
     'daw:playhead': { position: number };
     'daw:bpm:change': { bpm: number };
+    'daw:transport:play': void;
+    'daw:transport:pause': void;
+    'daw:transport:stop': void;
+    'daw:transport:seek': { position: number };
+    'daw:track:add': { track: ITrack };
+    'daw:track:added': { track: ITrack };
+    'daw:track:move': { trackId: string; newIndex: number };
+    'daw:playhead:move': void;
+    'daw:track:contextmenu': { trackId: string; x: number; y: number };
+    'daw:clip:contextmenu': { clipId: string; x: number; y: number };
     
     // Clip 相關事件
     'clip:added': { clip: IClip };
     'clip:moved': { clip: IClip };
     'clip:resized': { clip: IClip };
     'clip:removed': { clipId: string };
-
-    // 右鍵選單事件
-    'track:contextmenu': { trackId: string; x: number; y: number };
-    'clip:contextmenu': { clipId: string; x: number; y: number };
-    
-    // Clip 操作事件
     'clip:cut': { clipId: string };
     'clip:copy': { clipId: string };
     'clip:delete': { clipId: string };
@@ -48,4 +56,35 @@ export const EVENTS = {
     RESIZE: {
         MOVE: 'resize:move' as const
     }
-} as const; 
+} as const;
+
+export interface DAWEventMap {
+    // 傳輸控制事件
+    'daw:transport:play': void;
+    'daw:transport:pause': void;
+    'daw:transport:stop': void;
+    'daw:transport:seek': { position: number };
+    
+    // 軌道事件
+    'daw:track:add': { track: ITrack };
+    'daw:track:remove': { trackId: string };
+    'daw:track:move': { trackId: string; newIndex: number };
+    'daw:track:update': { track: ITrack };
+    'daw:track:contextmenu': { trackId: string; x: number; y: number };
+    'daw:track:removed': { trackId: string };
+    
+    // 片段事件
+    'daw:clip:add': { clip: IClip };
+    'daw:clip:remove': { clipId: string };
+    'daw:clip:move': { clip: IClip };
+    'daw:clip:resize': { clip: IClip };
+    'daw:clip:contextmenu': { clipId: string; x: number; y: number };
+    'daw:clip:removed': { clipId: string };
+    
+    // 播放頭事件
+    'daw:playhead:move': void;
+    'daw:playhead:position': { position: number };
+    
+    // BPM 事件
+    'daw:bpm:change': { bpm: number };
+} 

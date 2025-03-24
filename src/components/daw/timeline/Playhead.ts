@@ -59,11 +59,9 @@ export class Playhead extends BaseComponent {
                 Math.round((newX - Playhead.CONTROL_WIDTH) / this.gridSize) * this.gridSize + Playhead.CONTROL_WIDTH
             );
             
-            this.setPosition((snappedX - Playhead.CONTROL_WIDTH) / this.gridSize);
+            this.setTimePosition((snappedX - Playhead.CONTROL_WIDTH) / this.gridSize, undefined);
 
-            this.eventManager.emit('playhead:move', {
-                time: this.getPosition()
-            });
+            this.eventManager.emit('daw:playhead:move', undefined);
         };
 
         const handlePointerUp = () => {
@@ -83,42 +81,50 @@ export class Playhead extends BaseComponent {
         this.line.clear();
         this.handle.clear();
 
+        // 繪製播放頭線條，往上延伸 10 像素
         this.line
             .setStrokeStyle({
                 width: 2,
                 color: 0xff0000,
-                alpha: 0.8
+                alpha: 0.6
             })
-            .moveTo(0, Playhead.HANDLE_SIZE)
-            .lineTo(0, this.height)
+            .moveTo(0, -10)  // 從上方開始畫
+            .lineTo(0, this.height + 10)  // 延伸到底部以下
             .stroke();
 
+        // 繪製更大的頂部倒三角形
         this.handle
-            .fill({ color: 0xff0000 })
+            .fill({ color: 0xff0000, alpha: 0.8 })  // 提高透明度
             .beginPath()
-            .moveTo(-Playhead.HANDLE_SIZE * 1.5, 0)
-            .lineTo(Playhead.HANDLE_SIZE * 1.5, 0)
-            .lineTo(0, Playhead.HANDLE_SIZE * 1.5)
+            .moveTo(-12, -8)      // 左頂點
+            .lineTo(12, -8)       // 右頂點
+            .lineTo(0, 4)       // 底部頂點
             .closePath();
 
+        // 增加更大的可點擊區域
         this.handle
             .fill({ color: 0xff0000, alpha: 0 })
             .rect(
-                -Playhead.HANDLE_SIZE * 2,
-                -Playhead.HANDLE_SIZE,
-                Playhead.HANDLE_SIZE * 4,
-                Playhead.HANDLE_SIZE * 2
+                -16,
+                -12,
+                32,
+                24
             );
+
+        // 將把手移到頂部
+        this.handle.position.y = 0;
     }
 
-    public setPosition(time: number) {
+    public setPosition(x: number, y: number): void {
+        super.setPosition(x, y);
+    }
+
+    public setTimePosition(time: number, _?: undefined) {
         const safeTime = Math.max(0, time);
         this.currentPosition = (safeTime * this.gridSize) + Playhead.CONTROL_WIDTH;
         this.container.position.x = this.currentPosition;
         
-        this.eventManager.emit('daw:time:update', {
-            time: safeTime
-        });
+        this.eventManager.emit('daw:playhead:move', undefined);
     }
 
     public getPosition(): number {

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { PixiManager } from '../pixi/PixiManager';
-import { DAWManager } from './DAWManager';
+import { DAWManager } from './core/DAWManager';
 import { useDAWSetup } from '../../hooks/useDAWSetup';
 
 /**
