@@ -12,6 +12,7 @@
 ### 2.1 第一階段：基礎架構設置
 
 1. **創建目錄結構**
+
    ```bash
    mkdir -p src/{presentation,domain,data,types,config,utils,events}
    mkdir -p src/presentation/{components,containers,core}
@@ -34,6 +35,7 @@
 #### 2.2.1 Track 功能重構
 
 1. **UI 層**
+
    ```typescript
    // presentation/components/daw/track/TrackComponent.ts
    class TrackComponent extends BaseComponent {
@@ -48,6 +50,7 @@
    ```
 
 2. **領域層**
+
    ```typescript
    // domain/daw/track/TrackService.ts
    class TrackService {
@@ -61,6 +64,7 @@
    ```
 
 3. **數據層**
+
    ```typescript
    // data/repositories/TrackRepository.ts
    class TrackRepository {
@@ -75,6 +79,7 @@
 #### 2.2.2 Timeline 功能重構
 
 1. **UI 層**
+
    ```typescript
    // presentation/components/daw/timeline/TimelineComponent.ts
    class TimelineComponent extends BaseComponent {
@@ -88,6 +93,7 @@
    ```
 
 2. **領域層**
+
    ```typescript
    // domain/daw/timeline/TimelineService.ts
    class TimelineService {
@@ -103,6 +109,7 @@
 ### 2.3 第三階段：優化和測試
 
 1. **添加單元測試**
+
    ```typescript
    // __tests__/domain/daw/track/TrackService.test.ts
    describe('TrackService', () => {
@@ -188,24 +195,28 @@
 ## 4. 重構檢查清單
 
 ### 4.1 代碼質量
+
 - [ ] 遵循 TypeScript 最佳實踐
 - [ ] 實現適當的錯誤處理
 - [ ] 添加必要的日誌記錄
 - [ ] 確保代碼可讀性
 
 ### 4.2 測試覆蓋
+
 - [ ] 單元測試覆蓋率 > 80%
 - [ ] 集成測試覆蓋主要流程
 - [ ] 端到端測試覆蓋關鍵功能
 
 ### 4.3 性能指標
+
 - [ ] 首次加載時間 < 2s
 - [ ] 事件響應時間 < 100ms
 - [ ] 內存使用穩定
 - [ ] 無明顯卡頓
 
 ### 4.4 文檔完整性
+
 - [ ] API 文檔更新
 - [ ] 使用示例完整
 - [ ] 測試指南清晰
-- [ ] 部署文檔準確 
+- [ ] 部署文檔準確
