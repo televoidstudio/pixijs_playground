@@ -82,7 +82,7 @@ export class Timeline extends BaseComponent {
             .fill({ color: 0x2a2a2a })
             .rect(0, 0, contentWidth, timelineHeight);
         
-        // 繪製垂直網格線
+        // 繪製垂直網格線和數字標記
         for (let x = startX; x <= contentWidth - DAWConfig.dimensions.controlsWidth; x += this.state.gridSize) {
             const beatIndex = x / this.state.gridSize;
             const measureNumber = Math.floor(beatIndex / 4) + 1;
