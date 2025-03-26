@@ -1,10 +1,53 @@
+/**
+ * 軌道介面定義
+ */
 export interface ITrack {
     id: string;
     name: string;
+    index: number;
+    clips: IClip[];
     volume: number;
-    isMuted: boolean;
-    isSolo: boolean;
+    pan: number;
+    muted: boolean;
+    soloed: boolean;
+}
+
+/**
+ * 音頻片段介面定義
+ */
+export interface IClip {
+    id: string;
+    trackId: string;
+    startTime: number;
+    duration: number;
+    audioBuffer: AudioBuffer | null;
+    name: string;
     color: number;
+}
+
+/**
+ * DAW 配置介面定義
+ */
+export interface DAWConfig {
+    // 視覺相關
+    trackHeight: number;
+    timelineHeight: number;
+    controlsWidth: number;
+    
+    // 網格相關
+    gridSize: number;
+    gridColor: number;
+    
+    // 音頻相關
+    sampleRate: number;
+    channels: number;
+    
+    // 播放相關
+    bpm: number;
+    timeSignature: {
+        numerator: number;
+        denominator: number;
+    };
 }
 
 export interface ITimeline {
@@ -13,15 +56,6 @@ export interface ITimeline {
     gridSize: number;   // 網格大小
     isPlaying: boolean; // 播放狀態
     bpm: number;       // 每分鐘節拍數
-}
-
-export interface IClip {
-    id: string;
-    trackId: string;
-    startTime: number;  // 開始時間（以拍子為單位）
-    duration: number;   // 持續時間（以拍子為單位）
-    color: number;      // 顏色
-    name: string;       // 片段名稱
 }
 
 // 擴展 EventPayload

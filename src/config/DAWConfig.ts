@@ -1,3 +1,48 @@
+export interface DAWConfig {
+    width: number;
+    height: number;
+    dimensions: {
+        topBarHeight: number;
+        timelineHeight: number;
+        trackHeight: number;
+        controlsWidth: number;
+        gridSize: number;
+    };
+}
+
+/**
+ * DAW 默認配置
+ */
+export const defaultDAWConfig: DAWConfig = {
+    width: 1200,
+    height: 800,
+    dimensions: {
+        topBarHeight: 60,
+        timelineHeight: 100,
+        trackHeight: 80,
+        controlsWidth: 200,
+        gridSize: 20
+    },
+    // 視覺相關
+    trackHeight: 100,
+    timelineHeight: 40,
+    controlsWidth: 200,
+    
+    // 網格相關
+    gridColor: 0x333333,
+    
+    // 音頻相關
+    sampleRate: 44100,
+    channels: 2,
+    
+    // 播放相關
+    bpm: 120,
+    timeSignature: {
+        numerator: 4,
+        denominator: 4
+    }
+};
+
 export const DAWConfig = {
     dimensions: {
         topBarHeight: 40,

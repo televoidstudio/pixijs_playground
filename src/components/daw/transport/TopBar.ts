@@ -1,7 +1,7 @@
 import * as PIXI from "pixi.js";
 import { BaseComponent } from "../core/BaseComponent";
-import { TimeDisplay } from "../components/TimeDisplay";
-import { BPMDisplay } from "../components/BPMDisplay";
+import { TimeDisplay } from "./TimeDisplay";
+import { BPMDisplay } from "./BPMDisplay";
 
 export class TopBar extends BaseComponent {
     public static readonly HEIGHT = 40;
