@@ -23,6 +23,11 @@ export class PlayheadComponent extends BaseComponent {
         this.gridSize = gridSize;
     }
 
+    public initialize(): void {
+        this.setupComponent();
+        this.setupEventHandlers();
+    }
+
     protected setupComponent(): void {
         this.line = new PIXI.Graphics();
         this.handle = new PIXI.Graphics();
@@ -55,7 +60,7 @@ export class PlayheadComponent extends BaseComponent {
             window.addEventListener('pointermove', this.handlePointerMove);
             window.addEventListener('pointerup', this.handlePointerUp);
 
-            this.uiEventBus.emit('ui:timeline:playhead:dragstart', {
+            this.emitUIEvent('ui:timeline:playhead:dragstart', {
                 position: this.getPosition()
             });
         };
@@ -75,7 +80,7 @@ export class PlayheadComponent extends BaseComponent {
         
         this.setTimePosition((snappedX - PlayheadComponent.CONTROL_WIDTH) / this.gridSize);
 
-        this.uiEventBus.emit('ui:timeline:playhead:drag', {
+        this.emitUIEvent('ui:timeline:playhead:drag', {
             position: this.getPosition()
         });
     };
@@ -89,13 +94,36 @@ export class PlayheadComponent extends BaseComponent {
         window.removeEventListener('pointermove', this.handlePointerMove);
         window.removeEventListener('pointerup', this.handlePointerUp);
 
-        this.uiEventBus.emit('ui:timeline:playhead:dragend', {
+        this.emitUIEvent('ui:timeline:playhead:dragend', {
             position: this.getPosition()
         });
     };
 
     private draw() {
-        // ... 保持原有的繪製邏輯
+        // 清除之前的繪製
+        this.line.clear();
+        this.handle.clear();
+
+        // 繪製播放頭線條
+        this.line
+            .setStrokeStyle({
+                width: 2,
+                color: 0xff0000,
+                alpha: 0.8
+            })
+            .moveTo(0, 0)
+            .lineTo(0, this.height)
+            .stroke();
+
+        // 繪製播放頭手柄
+        this.handle
+            .fill({ color: 0xff0000 })
+            .drawRect(
+                -PlayheadComponent.HANDLE_SIZE / 2,
+                0,
+                PlayheadComponent.HANDLE_SIZE,
+                PlayheadComponent.HANDLE_SIZE
+            );
     }
 
     public setTimePosition(time: number) {
@@ -103,7 +131,7 @@ export class PlayheadComponent extends BaseComponent {
         this.currentPosition = (safeTime * this.gridSize) + PlayheadComponent.CONTROL_WIDTH;
         this.container.position.x = this.currentPosition;
         
-        this.uiEventBus.emit('ui:timeline:playhead:move', {
+        this.emitUIEvent('ui:timeline:playhead:move', {
             position: this.getPosition()
         });
     }
@@ -121,5 +149,10 @@ export class PlayheadComponent extends BaseComponent {
         window.removeEventListener('pointermove', this.handlePointerMove);
         window.removeEventListener('pointerup', this.handlePointerUp);
         super.destroy();
+    }
+
+    public setHeight(height: number): void {
+        this.height = height;
+        this.draw();
     }
 } 

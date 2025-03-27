@@ -28,6 +28,7 @@ export interface UIEventPayload {
     'ui:timeline:playhead:drag': { position: number };
     'ui:timeline:playhead:dragend': { position: number };
     'ui:timeline:playhead:move': { position: number };
+    'ui:timeline:state:update': { gridSize?: number; zoom?: number };
     
     // 傳輸控制相關事件
     'ui:transport:playback:toggle': { isPlaying: boolean };

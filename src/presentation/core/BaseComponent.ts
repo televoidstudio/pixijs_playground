@@ -39,11 +39,12 @@ export abstract class BaseComponent {
         this.container.sortableChildren = true;
         this.container.eventMode = 'static';
         this.container.visible = true;
-
-        // 初始化組件
-        this.setupComponent();
-        this.setupEventHandlers();
     }
+
+    /**
+     * 初始化組件
+     */
+    public abstract initialize(): void;
 
     /**
      * 初始化組件的抽象方法
@@ -129,14 +130,10 @@ export abstract class BaseComponent {
     }
 
     /**
-     * 清理組件資源
-     * 移除所有事件監聽器並銷毀 PIXI 容器
+     * 銷毀組件
      */
     public destroy(): void {
-        // 清理事件監聽器
         this.uiEventBus.removeAllListeners();
-        
-        // 銷毀 PIXI 容器及其子元素
         this.container.destroy({ children: true });
     }
 } 
