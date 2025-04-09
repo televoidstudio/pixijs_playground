@@ -12,7 +12,7 @@ import { AudioEngine } from '../../../audio/AudioEngine';
 import { ITimeline, IClip, ITrack } from '../../../types/daw';
 import { DAWEventPayload } from '../../../types/events';
 import TrackArea from '../track/TrackArea';
-import { MIDIEditor } from "../midi/MIDIEditor";
+import { MIDIEditor } from "../midi/MidiEditor";
 
 export class DAWManager {
     // 常量定義
