@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { PixiManager } from "./PixiManager";
 import { FloatingWindow } from "../window/FloatingWindow";
-import { EventManager } from "../../utils/EventManager";
+import { EventManager } from "../../events/EventManager";
 import * as PIXI from "pixi.js";
 
 const PixiCanvas: React.FC = () => {

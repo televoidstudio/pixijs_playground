@@ -26,11 +26,13 @@ export class Playhead extends BaseComponent {
         this.container.addChild(this.line);
         this.container.addChild(this.handle);
 
+        // 設置容器為可互動
         this.container.eventMode = 'static';
+        this.container.cursor = 'ew-resize';
+        
+        // 設置把手為可互動
         this.handle.eventMode = 'static';
         this.handle.cursor = 'ew-resize';
-        
-        this.handle.interactive = true;
         
         this.setupDragEvents();
         this.draw();
@@ -40,95 +42,86 @@ export class Playhead extends BaseComponent {
     }
 
     private setupDragEvents() {
-        const handlePointerDown = (event: PIXI.FederatedPointerEvent) => {
+        // 整個容器都可以拖動
+        this.container.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
             this.isDragging = true;
             this.dragStartX = event.globalX - this.container.position.x;
             this.handle.alpha = 0.7;
             
-            window.addEventListener('pointermove', handlePointerMove);
-            window.addEventListener('pointerup', handlePointerUp);
-        };
+            window.addEventListener('pointermove', this.handlePointerMove);
+            window.addEventListener('pointerup', this.handlePointerUp);
+        });
 
-        const handlePointerMove = (event: PointerEvent) => {
-            if (!this.isDragging) return;
-
-            const newX = event.clientX - this.dragStartX;
-            const minX = Playhead.CONTROL_WIDTH;
-            const snappedX = Math.max(
-                minX,
-                Math.round((newX - Playhead.CONTROL_WIDTH) / this.gridSize) * this.gridSize + Playhead.CONTROL_WIDTH
-            );
+        // 把手也可以拖動
+        this.handle.on('pointerdown', (event: PIXI.FederatedPointerEvent) => {
+            this.isDragging = true;
+            this.dragStartX = event.globalX - this.container.position.x;
+            this.handle.alpha = 0.7;
             
-            this.setTimePosition((snappedX - Playhead.CONTROL_WIDTH) / this.gridSize, undefined);
-
-            this.eventManager.emit('daw:playhead:move', undefined);
-        };
-
-        const handlePointerUp = () => {
-            if (!this.isDragging) return;
-            
-            this.isDragging = false;
-            this.handle.alpha = 1;
-            
-            window.removeEventListener('pointermove', handlePointerMove);
-            window.removeEventListener('pointerup', handlePointerUp);
-        };
-
-        this.handle.on('pointerdown', handlePointerDown);
+            window.addEventListener('pointermove', this.handlePointerMove);
+            window.addEventListener('pointerup', this.handlePointerUp);
+        });
     }
+
+    private handlePointerMove = (event: PointerEvent) => {
+        if (!this.isDragging) return;
+
+        const newX = event.clientX - this.dragStartX;
+        const minX = Playhead.CONTROL_WIDTH;
+        const adjustedX = Math.max(minX, newX);
+        
+        this.setTimePosition((adjustedX - Playhead.CONTROL_WIDTH) / this.gridSize);
+
+        this.eventManager.emit('daw:playhead:move', undefined);
+    };
+
+    private handlePointerUp = () => {
+        if (!this.isDragging) return;
+        
+        this.isDragging = false;
+        this.handle.alpha = 1;
+        
+        window.removeEventListener('pointermove', this.handlePointerMove);
+        window.removeEventListener('pointerup', this.handlePointerUp);
+    };
 
     private draw() {
         this.line.clear();
         this.handle.clear();
 
-        // 繪製播放頭線條，往上延伸 10 像素
+        // 繪製播放頭線條
         this.line
             .setStrokeStyle({
                 width: 2,
                 color: 0xff0000,
-                alpha: 0.6
+                alpha: 1
             })
-            .moveTo(0, -10)  // 從上方開始畫
-            .lineTo(0, this.height + 10)  // 延伸到底部以下
+            .moveTo(0, 0)
+            .lineTo(0, this.height)
             .stroke();
 
-        // 繪製更大的頂部倒三角形
+        // 繪製頂部三角形
         this.handle
-            .fill({ color: 0xff0000, alpha: 0.8 })  // 提高透明度
+            .fill({ color: 0xff0000 })
             .beginPath()
-            .moveTo(-12, -8)      // 左頂點
-            .lineTo(12, -8)       // 右頂點
-            .lineTo(0, 4)       // 底部頂點
+            .moveTo(-Playhead.HANDLE_SIZE, 0)
+            .lineTo(Playhead.HANDLE_SIZE, 0)
+            .lineTo(0, Playhead.HANDLE_SIZE)
             .closePath();
-
-        // 增加更大的可點擊區域
-        this.handle
-            .fill({ color: 0xff0000, alpha: 0 })
-            .rect(
-                -16,
-                -12,
-                32,
-                24
-            );
-
-        // 將把手移到頂部
-        this.handle.position.y = 0;
     }
 
     public setPosition(x: number, y: number): void {
-        super.setPosition(x, y);
+        this.container.position.set(x, y);
     }
 
-    public setTimePosition(time: number, _?: undefined) {
+    public setTimePosition(time: number) {
         const safeTime = Math.max(0, time);
-        this.currentPosition = (safeTime * this.gridSize) + Playhead.CONTROL_WIDTH;
-        this.container.position.x = this.currentPosition;
-        
-        this.eventManager.emit('daw:playhead:move', undefined);
+        this.currentPosition = safeTime;
+        this.container.position.x = Playhead.CONTROL_WIDTH + (safeTime * this.gridSize);
     }
 
     public getPosition(): number {
-        return Math.max(0, (this.currentPosition - Playhead.CONTROL_WIDTH) / this.gridSize);
+        return this.currentPosition;
     }
 
     public setHeight(height: number) {
@@ -137,13 +130,14 @@ export class Playhead extends BaseComponent {
     }
 
     public update() {
-        // 實現 BaseComponent 的抽象方法
+        this.draw();
     }
 
     public destroy() {
-        this.handle.removeAllListeners();
-        this.line.destroy();
-        this.handle.destroy();
+        // 移除事件監聽器
+        window.removeEventListener('pointermove', this.handlePointerMove);
+        window.removeEventListener('pointerup', this.handlePointerUp);
+        
         this.container.destroy({ children: true });
     }
 } 

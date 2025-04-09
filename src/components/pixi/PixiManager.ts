@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { EventManager } from "../../utils/EventManager";
+import { EventManager } from "../../events/EventManager";
 
 export class PixiManager {
     private destroyed = false;

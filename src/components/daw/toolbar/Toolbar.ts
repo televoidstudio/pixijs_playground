@@ -1,16 +1,23 @@
 import * as PIXI from "pixi.js";
-import { BaseComponent } from "../../core/BaseComponent";
-import { DAWConfig } from "../../../../config/DAWConfig";
+import { BaseComponent } from "../core/BaseComponent";
+import { DAWConfig } from "../../../config/DAWConfig";
+import { EventManager } from "../../../events/EventManager";
+import { ITrack } from "../../../types/daw";
 
-export class ToolBar extends BaseComponent {
+export class Toolbar extends BaseComponent {
     public static readonly HEIGHT = 40;
     private background: PIXI.Graphics;
-    private toolContainer: PIXI.Container;
-    private currentTool: string = 'select';
+    private buttonContainer: PIXI.Container;
+    private buttons: Map<string, PIXI.Container> = new Map();
+    private trackCount: number = 0;
 
     constructor(width: number) {
         super();
         this.init(width);
+    }
+
+    public getContainer(): PIXI.Container {
+        return this.container;
     }
 
     private init(width: number): void {
@@ -18,81 +25,169 @@ export class ToolBar extends BaseComponent {
         this.background = new PIXI.Graphics();
         this.background
             .fill({ color: 0x2a2a2a })
-            .rect(0, 0, width, ToolBar.HEIGHT);
+            .rect(0, 0, width, Toolbar.HEIGHT);
         this.container.addChild(this.background);
 
-        // 創建工具容器
-        this.toolContainer = new PIXI.Container();
-        this.toolContainer.position.set(10, 5);  // 留出邊距
-        this.container.addChild(this.toolContainer);
+        // 創建按鈕容器
+        this.buttonContainer = new PIXI.Container();
+        this.buttonContainer.position.set(10, 5);
+        this.container.addChild(this.buttonContainer);
 
-        // 創建基本工具
-        this.createTools();
+        // 創建按鈕
+        this.createButtons();
+        this.setupEvents();
     }
 
-    private createTools(): void {
-        const tools = [
-            { name: 'select', label: '選擇', shortcut: 'V' },
-            { name: 'cut', label: '剪切', shortcut: 'C' },
-            { name: 'erase', label: '擦除', shortcut: 'E' }
+    private createButtons(): void {
+        const buttonWidth = 100;
+        const buttonHeight = 30;
+        const buttonSpacing = 20; // 增加按鈕間距
+        const startX = 20;
+        const startY = -10; // 向上移動 30px (從 20 改為 -10)
+
+        // 創建 +Track 按鈕
+        const addTrackButton = this.createButton(
+            "+ Track",
+            startX,
+            startY,
+            buttonWidth,
+            buttonHeight,
+            0x3a3a3a
+        );
+        this.buttons.set("addTrack", addTrackButton);
+        this.buttonContainer.addChild(addTrackButton);
+
+        // 創建其他按鈕
+        const buttons = [
+            { id: "undo", text: "Undo", x: startX + buttonWidth + buttonSpacing },
+            { id: "redo", text: "Redo", x: startX + (buttonWidth + buttonSpacing) * 2 },
+            { id: "cut", text: "Cut", x: startX + (buttonWidth + buttonSpacing) * 3 },
+            { id: "copy", text: "Copy", x: startX + (buttonWidth + buttonSpacing) * 4 },
+            { id: "paste", text: "Paste", x: startX + (buttonWidth + buttonSpacing) * 5 }
         ];
 
-        tools.forEach((tool, index) => {
-            const button = this.createToolButton(tool);
-            button.position.x = index * 40;  // 工具按鈕間距
-            this.toolContainer.addChild(button);
+        buttons.forEach(button => {
+            const buttonContainer = this.createButton(
+                button.text,
+                button.x,
+                startY,
+                buttonWidth,
+                buttonHeight,
+                0x3a3a3a
+            );
+            this.buttons.set(button.id, buttonContainer);
+            this.buttonContainer.addChild(buttonContainer);
         });
     }
 
-    private createToolButton(tool: { name: string; label: string; shortcut: string }): PIXI.Container {
+    private createButton(
+        text: string,
+        x: number,
+        y: number,
+        width: number,
+        height: number,
+        color: number
+    ): PIXI.Container {
         const button = new PIXI.Container();
-        
-        // 按鈕背景
-        const background = new PIXI.Graphics();
-        background
-            .fill({ color: this.currentTool === tool.name ? 0x3a3a3a : 0x2a2a2a })
-            .rect(0, 0, 30, 30);
-        
-        // 按鈕文字
-        const text = new PIXI.Text({
-            text: tool.label[0],  // 只顯示第一個字
+        button.position.set(x, y);
+
+        // 創建背景
+        const background = new PIXI.Graphics()
+            .fill({ color: color })
+            .rect(0, 0, width, height);
+
+        // 創建文字
+        const buttonText = new PIXI.Text({
+            text: text,
             style: {
-                fontSize: 12,
-                fill: 0xffffff
+                fontSize: 14,
+                fill: 0xffffff,
+                fontFamily: 'Arial'
             }
         });
-        text.position.set(
-            (30 - text.width) / 2,
-            (30 - text.height) / 2
+        buttonText.position.set(
+            (width - buttonText.width) / 2,
+            (height - buttonText.height) / 2
         );
 
-        button.addChild(background, text);
+        button.addChild(background, buttonText);
         button.eventMode = 'static';
         button.cursor = 'pointer';
 
-        // 添加事件監聽
-        button.on('pointerdown', () => {
-            this.setCurrentTool(tool.name);
-            this.eventManager.emit('tool:changed', { tool: tool.name });
-        });
+        // 添加 hover 效果
+        const originalColor = color;
+        const hoverColor = 0x5a5a5a; // 更亮的顏色
+        const pressColor = 0x6a6a6a; // 按下時的顏色
 
         button.on('pointerover', () => {
-            background.fill({ color: 0x3a3a3a });
+            background.clear().fill({ color: hoverColor }).rect(0, 0, width, height);
+            buttonText.style.fill = 0xffffff; // 文字顏色變白
         });
 
         button.on('pointerout', () => {
-            background.fill({ color: this.currentTool === tool.name ? 0x3a3a3a : 0x2a2a2a });
+            background.clear().fill({ color: originalColor }).rect(0, 0, width, height);
+            buttonText.style.fill = 0xffffff; // 恢復原始文字顏色
+        });
+
+        button.on('pointerdown', () => {
+            background.clear().fill({ color: pressColor }).rect(0, 0, width, height);
+        });
+
+        button.on('pointerup', () => {
+            background.clear().fill({ color: hoverColor }).rect(0, 0, width, height);
+        });
+
+        button.on('pointerupoutside', () => {
+            background.clear().fill({ color: originalColor }).rect(0, 0, width, height);
         });
 
         return button;
     }
 
-    private setCurrentTool(toolName: string): void {
-        this.currentTool = toolName;
-        // 更新所有工具按鈕的外觀
-        this.toolContainer.children.forEach((button, index) => {
-            const background = button.getChildAt(0) as PIXI.Graphics;
-            background.fill({ color: this.currentTool === ['select', 'cut', 'erase'][index] ? 0x3a3a3a : 0x2a2a2a });
+    private setupEvents(): void {
+        // 設置 +Track 按鈕事件
+        const addTrackButton = this.buttons.get("addTrack");
+        if (addTrackButton) {
+            addTrackButton.on('pointerdown', () => {
+                this.trackCount++;
+                const newTrack: ITrack = {
+                    id: `track-${this.trackCount}`,
+                    name: `Track ${this.trackCount}`,
+                    volume: 1,
+                    isMuted: false,
+                    isSolo: false,
+                    color: 0x3a3a3a
+                };
+                this.eventManager.emit('daw:track:add', { track: newTrack });
+            });
+        }
+
+        // 設置其他按鈕事件
+        const buttonEvents = {
+            undo: () => this.eventManager.emit('daw:tool:changed', { tool: 'undo' }),
+            redo: () => this.eventManager.emit('daw:tool:changed', { tool: 'redo' }),
+            cut: () => this.eventManager.emit('clip:cut', { clipId: '' }),
+            copy: () => this.eventManager.emit('clip:copy', { clipId: '' }),
+            paste: () => this.eventManager.emit('clip:added', { clip: null })
+        };
+
+        Object.entries(buttonEvents).forEach(([id, handler]) => {
+            const button = this.buttons.get(id);
+            if (button) {
+                button.on('pointerdown', handler);
+            }
         });
+    }
+
+    public update(): void {
+        // 更新工具欄
+    }
+
+    public destroy(): void {
+        this.buttons.forEach(button => {
+            button.destroy({ children: true });
+        });
+        this.buttons.clear();
+        this.container.destroy({ children: true });
     }
 } 

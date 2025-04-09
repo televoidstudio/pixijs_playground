@@ -4,7 +4,7 @@ import { Draggable } from "./Draggable";
 import { ResizableHandle } from "./ResizableHandle";
 import { theme } from "../../config/theme";
 import { WINDOW_DEFAULTS } from "../../config/constants";
-import { EventManager } from "../../utils/EventManager";
+import { EventManager } from "../../events/EventManager";
 
 export class FloatingWindow implements IFloatingWindow {
   public readonly id: string;

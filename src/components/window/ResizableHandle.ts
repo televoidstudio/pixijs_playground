@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js";
 import { IFloatingWindow } from "../../types/IFloatingWindow";
-import { EventManager } from "../../utils/EventManager";
+import { EventManager } from "../../events/EventManager";
 
 export class ResizableHandle {
     private isResizing = false;

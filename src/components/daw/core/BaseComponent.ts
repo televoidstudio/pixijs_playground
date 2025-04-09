@@ -1,5 +1,5 @@
 import * as PIXI from "pixi.js";
-import { EventManager } from "../../../utils/EventManager";
+import { EventManager } from "../../../events/EventManager";
 
 /**
  * DAW 組件的基礎抽象類

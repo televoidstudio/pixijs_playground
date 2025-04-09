@@ -6,7 +6,8 @@ import { BPMDisplay } from "../components/BPMDisplay";
 export class TopBar extends BaseComponent {
     public static readonly HEIGHT = 40;
     private background: PIXI.Graphics;
-    private buttonContainer: PIXI.Container;
+    private projectNameContainer: PIXI.Container;
+    private saveButtonContainer: PIXI.Container;
     private timeDisplay: TimeDisplay;
     private bpmDisplay: PIXI.Container;
     private bpmText: PIXI.Text;
@@ -23,10 +24,15 @@ export class TopBar extends BaseComponent {
         this.background = new PIXI.Graphics();
         this.container.addChild(this.background);
 
-        // 創建按鈕容器
-        this.buttonContainer = new PIXI.Container();
-        this.buttonContainer.position.set(20, 0);
-        this.container.addChild(this.buttonContainer);
+        // 創建項目名稱容器
+        this.projectNameContainer = new PIXI.Container();
+        this.projectNameContainer.position.set(20, 0);
+        this.container.addChild(this.projectNameContainer);
+
+        // 創建保存按鈕容器
+        this.saveButtonContainer = new PIXI.Container();
+        this.saveButtonContainer.position.set(this.width - 120, 0);
+        this.container.addChild(this.saveButtonContainer);
 
         // 創建時間顯示
         this.timeDisplay = new TimeDisplay();
@@ -34,12 +40,37 @@ export class TopBar extends BaseComponent {
 
         // 創建 BPM 控制並設置位置
         const bpmControl = this.createBPMControl();
-        bpmControl.position.set(200, 5); // 設置位置在播放控制按鈕旁邊
+        bpmControl.position.set(200, 5);
         this.container.addChild(bpmControl);
 
         this.drawBackground();
-        this.createButtons();
+        this.createProjectName();
+        this.createSaveButton();
         this.updateComponentsPosition();
+    }
+
+    private createProjectName() {
+        const projectName = new PIXI.Text({
+            text: "My Project",
+            style: {
+                fontSize: 16,
+                fill: 0xffffff,
+                fontFamily: 'Arial'
+            }
+        });
+        projectName.position.set(0, (TopBar.HEIGHT - projectName.height) / 2);
+        this.projectNameContainer.addChild(projectName);
+    }
+
+    private createSaveButton() {
+        const saveButton = this.createButton("Save 🔽", 0x3a3a3a);
+        saveButton.position.set(0, (TopBar.HEIGHT - 30) / 2);
+        this.saveButtonContainer.addChild(saveButton);
+
+        saveButton.on('pointerdown', () => {
+            // 處理保存邏輯
+            console.log("Save button clicked");
+        });
     }
 
     private updateComponentsPosition() {
@@ -74,65 +105,40 @@ export class TopBar extends BaseComponent {
             .rect(0, TopBar.HEIGHT - 1, this.width, 1);
     }
 
-    private createButtons() {
-        // 播放/暫停按鈕
-        const playButton = this.createButton("播放", 0x3a3a3a);
-        playButton.position.set(0, (TopBar.HEIGHT - 30) / 2);
-        this.buttonContainer.addChild(playButton);
-
-        // 停止按鈕
-        const stopButton = this.createButton("停止", 0x3a3a3a);
-        stopButton.position.set(80, (TopBar.HEIGHT - 30) / 2);
-        this.buttonContainer.addChild(stopButton);
-
-        // 設置按鈕事件
-        playButton.on('pointerdown', () => {
-            this.isPlaying = !this.isPlaying;
-            const buttonText = playButton.getChildAt(1) as PIXI.Text;
-            buttonText.text = this.isPlaying ? "暫停" : "播放";
-            
-            this.eventManager.emit('daw:transport', {
-                action: this.isPlaying ? 'play' : 'pause'
-            });
-        });
-
-        stopButton.on('pointerdown', () => {
-            this.isPlaying = false;
-            const playButtonText = playButton.getChildAt(1) as PIXI.Text;
-            playButtonText.text = "播放";
-            
-            this.eventManager.emit('daw:transport', {
-                action: 'stop'
-            });
-        });
-    }
-
     private createButton(text: string, color: number): PIXI.Container {
         const button = new PIXI.Container();
         
         // 按鈕背景
-        const background = new PIXI.Graphics()
-            .fill({ color })
-            .roundRect(0, 0, 60, 30, 4);
+        const background = new PIXI.Graphics();
+        background
+            .fill({ color: color })
+            .roundRect(0, 0, 80, 30, 5);
         
         // 按鈕文字
         const buttonText = new PIXI.Text({
-            text,
+            text: text,
             style: {
                 fontSize: 12,
                 fill: 0xffffff,
                 fontFamily: 'Arial'
             }
         });
-        
         buttonText.position.set(
-            (60 - buttonText.width) / 2,
+            (80 - buttonText.width) / 2,
             (30 - buttonText.height) / 2
         );
 
         button.addChild(background, buttonText);
         button.eventMode = 'static';
         button.cursor = 'pointer';
+
+        button.on('pointerover', () => {
+            background.fill({ color: 0x4a4a4a });
+        });
+
+        button.on('pointerout', () => {
+            background.fill({ color: color });
+        });
 
         return button;
     }
@@ -250,7 +256,7 @@ export class TopBar extends BaseComponent {
 
     public destroy() {
         this.timeDisplay.destroy();
-        this.buttonContainer.removeAllListeners();
+        this.saveButtonContainer.removeAllListeners();
         this.container.destroy({ children: true });
     }
 } 

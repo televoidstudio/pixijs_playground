@@ -1,13 +1,36 @@
-import { DAWEventMap } from '../types/events';
+// Define event payload types
+import { DAWEventPayload } from '../types/events';
+import { IClip } from '../types/clip';
 
+export type EventPayload = DAWEventPayload & {
+    'window:destroyed': { id: string };
+    'window:added': { id: string };
+    'window:removed': { id: string };
+    'window:focused': { id: string };
+    'resize:move': { window: any; size: any };  // 暫時使用 any
+    'daw:track:dragstart': { trackId: string; index: number };
+    'daw:track:drag': { trackId: string; y: number };
+    'daw:track:dragend': { trackId: string; finalY: number };
+    'daw:track:reordered': { trackId: string; newIndex: number };
+    'daw:clip:added': { clip: IClip };
+    'daw:clip:moved': { clip: IClip };
+    'daw:clip:resized': { clip: IClip };
+    'daw:clip:removed': { clipId: string };
+};
+
+// Improve type safety for event callbacks
+export type EventCallback<K extends keyof EventPayload> = (data: EventPayload[K]) => void;
+
+// Event management system
 export class EventManager {
     private static instance: EventManager;
-    private listeners: Map<string, Set<Function>>;
+    private events: Map<string, Set<EventCallback<any>>>;
 
     private constructor() {
-        this.listeners = new Map();
+        this.events = new Map();
     }
 
+    // Get singleton instance
     public static getInstance(): EventManager {
         if (!EventManager.instance) {
             EventManager.instance = new EventManager();
@@ -15,27 +38,26 @@ export class EventManager {
         return EventManager.instance;
     }
 
-    public on<K extends keyof DAWEventMap>(
-        event: K,
-        callback: (data: DAWEventMap[K]) => void
-    ): void {
-        if (!this.listeners.has(event)) {
-            this.listeners.set(event, new Set());
+    // Subscribe to an event
+    public on<K extends keyof EventPayload>(event: K, callback: EventCallback<K>): void {
+        if (!this.events.has(event)) {
+            this.events.set(event, new Set());
         }
-        this.listeners.get(event)?.add(callback);
+        this.events.get(event)?.add(callback);
     }
 
-    public emit<K extends keyof DAWEventMap>(
-        event: K,
-        data: DAWEventMap[K]
-    ): void {
-        this.listeners.get(event)?.forEach(callback => callback(data));
+    // Unsubscribe from an event
+    public off<K extends keyof EventPayload>(event: K, callback: EventCallback<K>): void {
+        this.events.get(event)?.delete(callback);
     }
 
-    public off<K extends keyof DAWEventMap>(
-        event: K,
-        callback: (data: DAWEventMap[K]) => void
-    ): void {
-        this.listeners.get(event)?.delete(callback);
+    // Emit an event
+    public emit<K extends keyof EventPayload>(event: K, data: EventPayload[K]): void {
+        this.events.get(event)?.forEach(callback => callback(data));
+    }
+
+    // Clear all event listeners
+    public clear(): void {
+        this.events.clear();
     }
 } 

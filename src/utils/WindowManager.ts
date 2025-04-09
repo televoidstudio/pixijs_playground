@@ -1,4 +1,4 @@
-import { EventManager } from './EventManager';
+import { EventManager } from '../events/EventManager';
 import { IFloatingWindow } from '../types/IFloatingWindow';
 
 // Singleton manager for handling multiple windows

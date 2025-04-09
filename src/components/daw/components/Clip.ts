@@ -1,5 +1,7 @@
 import * as PIXI from "pixi.js";
 import { BaseComponent } from "../core/BaseComponent";
+import { MidiEditor } from "../midi/MidiEditor";
+import MidiEditorWindow from "../midi/MidiEditorWindow";
 import { IClip } from "../../../types/daw";
 
 /**
@@ -29,6 +31,9 @@ export class Clip extends BaseComponent {
     private originalWidth: number = 0;
     /** 網格大小 */
     private readonly gridSize: number;
+
+    private midiEditor: MidiEditor | null = null;
+    private editorWindow: (PIXI.Container & { handleKeyDown?: (event: KeyboardEvent) => void }) | null = null;
 
     /**
      * 構造函數
@@ -95,6 +100,14 @@ export class Clip extends BaseComponent {
                 x: event.global.x,
                 y: event.global.y
             });
+        });
+
+        // 添加雙擊事件
+        this.container.eventMode = 'static';
+        this.container.on('pointertap', (event: PIXI.FederatedPointerEvent) => {
+            if (event.detail === 2) {  // 雙擊
+                this.openMidiEditor();
+            }
         });
     }
 
@@ -291,6 +304,7 @@ export class Clip extends BaseComponent {
      * 清理資源
      */
     public destroy() {
+        this.closeMidiEditor();
         this.container.removeAllListeners();
         this.container.destroy({ children: true });
     }
@@ -304,5 +318,36 @@ export class Clip extends BaseComponent {
 
     public getData(): IClip {
         return { ...this.clipData };
+    }
+
+    private openMidiEditor(): void {
+        if (this.editorWindow) {
+            return;
+        }
+
+        const editorWindow = new MidiEditorWindow(this.clipData, () => {
+            this.editorWindow = null;
+            this.midiEditor = null;
+        });
+
+        this.editorWindow = editorWindow.getContainer() as PIXI.Container & { handleKeyDown?: (event: KeyboardEvent) => void };
+        this.midiEditor = editorWindow.getMidiEditor();
+
+        // 確保編輯器在最上層
+        this.eventManager.emit('daw:window:add', {
+            window: this.editorWindow,
+            zIndex: 9999
+        });
+    }
+
+    private closeMidiEditor(): void {
+        if (this.editorWindow && this.midiEditor) {
+            this.eventManager.emit('daw:window:remove', {
+                window: this.editorWindow
+            });
+            
+            this.editorWindow = null;
+            this.midiEditor = null;
+        }
     }
 } 

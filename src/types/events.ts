@@ -32,6 +32,21 @@ export interface DAWEventPayload {
     'daw:track:contextmenu': { trackId: string; x: number; y: number };
     'daw:clip:contextmenu': { clipId: string; x: number; y: number };
     
+    // 音頻測試事件
+    'daw:audio:test': { type: 'note' | 'chord' | 'scale' };
+    'daw:audio:preview': { note: string };
+    'daw:tool:changed': { tool: string };
+    
+    // MIDI 編輯器事件
+    'daw:midi:note:added': { note: { pitch: number; time: number; duration: number; velocity: number } };
+    'daw:midi:note:removed': { note: { pitch: number; time: number; duration: number; velocity: number } };
+    'daw:midi:note:moved': { note: { pitch: number; time: number; duration: number; velocity: number } };
+    'daw:midi:note:resized': { note: { pitch: number; time: number; duration: number; velocity: number } };
+    
+    // 視窗管理事件
+    'daw:window:add': { window: any; zIndex: number };
+    'daw:window:remove': { window: any };
+    
     // Clip 相關事件
     'clip:added': { clip: IClip };
     'clip:moved': { clip: IClip };
